@@ -5,6 +5,7 @@
   "keywords": [
     "deepseek-harness",
     "dsh",
+    "dsh-plugin",
     "plugin",
     "skill",
     "skills",
@@ -12,6 +13,18 @@
     "github"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wisdoverse/dsh-skills-manager-plugin.git"
+  },
+  "homepage": "https://github.com/Wisdoverse/dsh-skills-manager-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/Wisdoverse/dsh-skills-manager-plugin/issues"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "packageManager": "pnpm@11.19.0",
   "private": true,
   "type": "module",
   "main": "index.js",
@@ -29,6 +42,7 @@
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",
+    "CHANGELOG.md",
     "SECURITY.md",
     "LICENSE"
   ],

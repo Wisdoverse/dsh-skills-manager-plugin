@@ -19,6 +19,10 @@ function resolveInsideRoot(entry) {
 test("package declares an installable DSH bundle", async () => {
   assert.equal(manifest.name, "dsh-skills-manager");
   assert.equal(manifest.type, "module");
+  assert.equal(manifest.engines?.node, "^22.19.0 || >=24.0.0");
+  assert.equal(manifest.packageManager, "pnpm@11.19.0");
+  assert.equal(manifest.repository?.url, "git+https://github.com/Wisdoverse/dsh-skills-manager-plugin.git");
+  assert.ok(manifest.keywords.includes("dsh-plugin"));
   assert.equal(manifest.dsh?.bundle?.patch, "./cordis.patch.yml");
 
   const patch = await readFile(resolveInsideRoot(manifest.dsh.bundle.patch), "utf8");
