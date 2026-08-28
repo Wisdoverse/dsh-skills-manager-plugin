@@ -31,6 +31,7 @@ DSH 已经提供完整的生命周期 Hook。本插件将这些 Hook 与 Skill �
 - [GitHub 托管的 Skills](#github-托管的-skills)
 - [项目级 Skills](#项目级-skills)
 - [管理与可观测性](#管理与可观测性)
+- [权限与数据](#权限与数据)
 - [安全](#安全)
 - [开发](#开发)
 
@@ -264,6 +265,19 @@ Settings → **Skill 管理** 提供：
 - `skill-manager/update` — 安装、更新或卸载后的同步结果。
 - `skills/change` — Skill 目录变化后由 Filesystem Provider 派发。
 
+## 权限与数据
+
+| 范围 | 行为 |
+| --- | --- |
+| 文件读取 | 读取宿主选择的 DSH 用户级与项目级 Skill 根目录，以及已配置 Git 来源中的元数据 |
+| 文件写入 | 来源保存在 `<DSH_HOME>/skill-sources`，管理器拥有的 Skill 保存在 `<DSH_HOME>/skills`，状态保存在 `<DSH_HOME>/skill-manager.json` |
+| 网络 | 仅在用户请求安装或更新来源时调用本地 `git`；插件不实现遥测 |
+| 进程 | 以参数数组运行 `git`，并可执行仓库内显式声明的 Node 生命周期 Hook，附带时间与输出限制 |
+| 凭据 | 不保存 Git 凭据；身份验证仍由用户的 Git 配置和凭据助手负责 |
+| 会话上下文 | 读取当前提示与 Skill 目录进行匹配，并向当前会话注入激活或建议消息 |
+
+卸载管理器拥有的 Skill 时会删除其复制目录。没有托管 Git 来源的本地手写 Skill 不会被管理器删除。
+
 ## 安全
 
 - Git 来源必须匹配受支持的 URL 白名单。
@@ -273,6 +287,8 @@ Settings → **Skill 管理** 提供：
 - 无效正则和不受支持的 Hook 声明会被忽略。
 
 安装带有可执行 Hook 的插件，意味着信任该仓库的代码。安装第三方来源前请先进行审查。
+
+受支持版本与私密漏洞报告方式见 [SECURITY.md](./SECURITY.md)。
 
 ## 开发
 

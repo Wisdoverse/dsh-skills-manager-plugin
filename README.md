@@ -31,6 +31,7 @@ DSH already exposes the lifecycle hooks. This plugin connects those hooks to ski
 - [GitHub-managed skills](#github-managed-skills)
 - [Project-scoped skills](#project-scoped-skills)
 - [Management and observability](#management-and-observability)
+- [Permissions and data](#permissions-and-data)
 - [Security](#security)
 - [Development](#development)
 
@@ -264,6 +265,19 @@ The `skill_manager` tool supports `status`, `install`, `update`, `uninstall`, `s
 - `skill-manager/update` — synchronization results after install, update, or uninstall.
 - `skills/change` — emitted by the filesystem provider after catalog changes.
 
+## Permissions and data
+
+| Surface | Behavior |
+| --- | --- |
+| Filesystem reads | Reads DSH user and project skill roots selected by the host, plus metadata from configured Git sources |
+| Filesystem writes | Stores sources under `<DSH_HOME>/skill-sources`, manager-owned skills under `<DSH_HOME>/skills`, and state in `<DSH_HOME>/skill-manager.json` |
+| Network | Invokes the local `git` executable only for user-requested source installation or update; the plugin implements no telemetry |
+| Processes | Runs `git` with argument arrays and may run explicitly declared in-repository Node lifecycle hooks with time and output limits |
+| Credentials | Does not store Git credentials; authentication remains owned by the user's Git configuration and credential helper |
+| Conversation context | Reads the active prompt and skill catalog for matching, then injects activation or suggestion messages into the current session |
+
+Uninstalling a manager-owned skill removes its copied skill directory. Locally authored skills that have no managed Git source are not removed by the manager.
+
 ## Security
 
 - Git sources must match the supported URL allowlist.
@@ -273,6 +287,8 @@ The `skill_manager` tool supports `status`, `install`, `update`, `uninstall`, `s
 - Malformed regular expressions and unsupported hook declarations are ignored.
 
 Installing a plugin with executable hooks means trusting that repository's code. Review third-party sources before installation.
+
+See [SECURITY.md](./SECURITY.md) for supported versions and private vulnerability reporting.
 
 ## Development
 
