@@ -10,7 +10,7 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 
 /** Public activation modes a skill may resolve to. */
 export const ACTIVATION_MODES = ["auto", "suggest", "off"];
@@ -503,7 +503,7 @@ async function describeSkillDir(rootDir, dir, level) {
   }
   return {
     root: rootDir,
-    relPath: level === 0 ? "." : dir.slice(rootDir.length + 1),
+    relPath: level === 0 ? "." : relative(rootDir, dir).split(sep).join("/"),
     name,
     description,
     level,
