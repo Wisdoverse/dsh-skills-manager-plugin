@@ -1,0 +1,40 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFile, stat } from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = dirname(fileURLToPath(import.meta.url));
+const manifest = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
+
+function resolveInsideRoot(entry) {
+  assert.equal(typeof entry, "string");
+  assert.equal(isAbsolute(entry), false, `${entry} must be repository-relative`);
+  const target = resolve(root, entry);
+  const fromRoot = relative(root, target);
+  assert.ok(fromRoot && fromRoot !== ".." && !fromRoot.startsWith(`..${sep}`), `${entry} escapes the package root`);
+  return target;
+}
+
+test("package declares an installable DSH bundle", async () => {
+  assert.equal(manifest.name, "dsh-skills-manager");
+  assert.equal(manifest.type, "module");
+  assert.equal(manifest.dsh?.bundle?.patch, "./cordis.patch.yml");
+
+  const patch = await readFile(resolveInsideRoot(manifest.dsh.bundle.patch), "utf8");
+  assert.match(patch, /^- insert:\s*$/m);
+  assert.match(patch, /^\s+- id: skill-manager\s*$/m);
+  assert.match(patch, new RegExp(`^\\s+name: ${manifest.name}\\s*$`, "m"));
+});
+
+test("published files and exports stay inside the package root", async () => {
+  const entries = new Set([manifest.main, ...manifest.files]);
+  for (const target of Object.values(manifest.exports)) {
+    if (typeof target === "string") entries.add(target);
+  }
+
+  for (const entry of entries) {
+    const info = await stat(resolveInsideRoot(entry));
+    assert.ok(info.isFile() || info.isDirectory(), `${entry} must exist`);
+  }
+});
