@@ -7,6 +7,7 @@
 [English](./README.md) · **简体中文**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-2563eb.svg)](./package.json)
+[![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-16a34a.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Last commit](https://img.shields.io/github/last-commit/Wisdoverse/dsh-skills-manager-plugin)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/commits/main)
