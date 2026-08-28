@@ -25,6 +25,7 @@ DSH 已经提供完整的生命周期 Hook。本插件将这些 Hook 与 Skill �
 - [核心特性](#核心特性)
 - [工作原理](#工作原理)
 - [快速开始](#快速开始)
+- [兼容性](#兼容性)
 - [Skill 配置](#skill-配置)
 - [Hook 兼容性](#hook-兼容性)
 - [GitHub 托管的 Skills](#github-托管的-skills)
@@ -81,30 +82,50 @@ flowchart LR
 
 ## 快速开始
 
-### 1. 将插件链接到 DSH Web Profile
+### 环境要求
+
+- DeepSeek Harness `0.1.1-rc.2`；
+- Node.js `^22.19.0 || >=24.0.0`；
+- `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
+
+### 从 GitHub 安装
 
 ```sh
-cd /data/dsh/profiles/web
-pnpm add link:/data/dsh/home/dsh-skills-manager
+dsh plugin --profile web add github:Wisdoverse/dsh-skills-manager-plugin
 ```
 
-### 2. 启用 Bundle
+DSH 会识别包内的 `dsh.bundle` manifest，并自动把 `dsh-skills-manager` 加入 Web Profile。安装完成后，请重启正在运行的 Web Profile。
 
-在 Profile 的 `package.json` 中，把 `dsh-skills-manager` 加入 `dsh.profile.bundles`：
+### 更新或卸载
 
-```json
-{
-  "dsh": {
-    "profile": {
-      "bundles": ["dsh-skills-manager"]
-    }
-  }
-}
+```sh
+dsh plugin --profile web update dsh-skills-manager
+dsh plugin --profile web remove dsh-skills-manager
 ```
 
-### 3. 重启 Profile
+执行任一操作后请重启 Profile，确保运行时 composition 与已安装 Bundle 一致。
 
-重启后宿主侧插件生效，客户端 Bundle 会自动重建。插件自带的 `cordis.patch.yml` 会把 `skill-manager` 插入宿主 composition，对所有会话生效。
+### 安装本地 Checkout 进行开发
+
+```sh
+git clone https://github.com/Wisdoverse/dsh-skills-manager-plugin.git
+cd dsh-skills-manager-plugin
+pnpm install --frozen-lockfile
+dsh plugin --profile web add .
+```
+
+插件自带的 `cordis.patch.yml` 会把 `skill-manager` 插入宿主 composition，对所有会话生效。
+
+## 兼容性
+
+| 组件 | 支持或持续验证范围 |
+| --- | --- |
+| DeepSeek Harness | `0.1.1-rc.2` 依赖合同与隔离 GitHub 安装烟测 |
+| Node.js | `22.19.0` 与 `24.19.0` |
+| pnpm | `11.19.0`，使用 frozen lockfile |
+| 操作系统 | Ubuntu 与 Windows CI 矩阵 |
+
+DSH 仍处于 developer preview。需要可复现安装时，请把插件固定到具体 commit；升级 DSH 依赖后应重新运行安装烟测。
 
 ## Skill 配置
 

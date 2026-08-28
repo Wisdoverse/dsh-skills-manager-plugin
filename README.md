@@ -25,6 +25,7 @@ DSH already exposes the lifecycle hooks. This plugin connects those hooks to ski
 - [Highlights](#highlights)
 - [How it works](#how-it-works)
 - [Quick start](#quick-start)
+- [Compatibility](#compatibility)
 - [Skill configuration](#skill-configuration)
 - [Hook compatibility](#hook-compatibility)
 - [GitHub-managed skills](#github-managed-skills)
@@ -81,30 +82,50 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 
 ## Quick start
 
-### 1. Link the plugin into a DSH web profile
+### Requirements
+
+- DeepSeek Harness `0.1.1-rc.2`;
+- Node.js `^22.19.0 || >=24.0.0`;
+- pnpm available on `PATH` for `dsh plugin`.
+
+### Install from GitHub
 
 ```sh
-cd /data/dsh/profiles/web
-pnpm add link:/data/dsh/home/dsh-skills-manager
+dsh plugin --profile web add github:Wisdoverse/dsh-skills-manager-plugin
 ```
 
-### 2. Enable the bundle
+DSH recognizes the package's `dsh.bundle` manifest and adds `dsh-skills-manager` to the Web profile automatically. Restart a running Web profile after installation.
 
-Add `dsh-skills-manager` to `dsh.profile.bundles` in the profile's `package.json`:
+### Update or remove
 
-```json
-{
-  "dsh": {
-    "profile": {
-      "bundles": ["dsh-skills-manager"]
-    }
-  }
-}
+```sh
+dsh plugin --profile web update dsh-skills-manager
+dsh plugin --profile web remove dsh-skills-manager
 ```
 
-### 3. Restart the profile
+Restart the profile after either operation so its composition matches the installed bundle set.
 
-The host-side plugin takes effect after restart, and the client bundle rebuilds automatically. The included `cordis.patch.yml` inserts `skill-manager` into the host composition for all sessions.
+### Install a local checkout for development
+
+```sh
+git clone https://github.com/Wisdoverse/dsh-skills-manager-plugin.git
+cd dsh-skills-manager-plugin
+pnpm install --frozen-lockfile
+dsh plugin --profile web add .
+```
+
+The included `cordis.patch.yml` inserts `skill-manager` into the host composition for all sessions.
+
+## Compatibility
+
+| Component | Supported or continuously verified |
+| --- | --- |
+| DeepSeek Harness | `0.1.1-rc.2` dependency contract and isolated GitHub-install smoke test |
+| Node.js | `22.19.0` and `24.19.0` |
+| pnpm | `11.19.0` with a frozen lockfile |
+| Operating systems | Ubuntu and Windows CI matrix |
+
+DSH is in developer preview. Pin the plugin to a commit when reproducibility matters, and re-run the install smoke test when upgrading DSH dependencies.
 
 ## Skill configuration
 
