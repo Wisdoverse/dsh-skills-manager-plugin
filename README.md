@@ -1,172 +1,175 @@
 # dsh-skills-manager
 
-DeepSeek Harness 的 Skill 管理插件:让 skill **真正被主动使用**,支持 **skill 级 hook 声明**、**GitHub 同步更新** 和 **Settings 管理界面**。设计对标 Claude Code (SKILL.md + hooks + plugin marketplace) 与 OpenAI Codex 的 skill 机制。
+[简体中文](README.zh-CN.md) | **English**
 
-## 问题背景
+A skill management plugin for DeepSeek Harness that makes skills **proactively used**. It supports **skill-level hook declarations**, **GitHub synchronization and updates**, and a **Settings management UI**. Its design is aligned with Claude Code (SKILL.md + hooks + plugin marketplace) and the OpenAI Codex skill system.
 
-DSH 内置的 `skill` 工具只有一种使用路径:模型看到 `<available_skills>` 摘要后**自己决定**调用 `skill` 工具加载全文。结果:
+## Background
 
-- 模型经常不调用 → 大量 skill 闲置("没有主动使用");
-- SKILL.md 无法声明触发条件,也没有任何 hook 接缝(技能文件里没有能被执行的东西);
-- skill 分散在本地目录,无法从 GitHub 一键更新。
+DSH's built-in `skill` tool has only one usage path: after seeing the `<available_skills>` summary, the model **decides on its own** whether to call the `skill` tool and load the full instructions. As a result:
 
-DSH 宿主层有完整的事件 hook(`agent/pre-step`、`tools/pre-execute`、`tools/post-execute`、`tools/result`、`system-prompt/assemble`、`skills/change`…,等价于 Claude Code 的 UserPromptSubmit / PreToolUse / PostToolUse),**但没有任何东西把 skill 声明接上去**。本插件就是那个接缝。
+- Models often do not call the tool, leaving many skills unused.
+- SKILL.md cannot declare activation conditions and has no hook integration point—nothing in a skill file can be executed.
+- Skills are scattered across local directories and cannot be updated from GitHub with one click.
 
-## 功能
+The DSH host already provides a complete event hook system (`agent/pre-step`, `tools/pre-execute`, `tools/post-execute`, `tools/result`, `system-prompt/assemble`, `skills/change`, and more), equivalent to Claude Code's UserPromptSubmit, PreToolUse, and PostToolUse events, but nothing connects skill declarations to those hooks. This plugin provides that missing integration.
 
-### 1. 主动激活(agent/pre-step hook)
+## Features
 
-每步请求之前,插件把用户消息与每个 skill 匹配,按命中强度分两档注入:
+### 1. Proactive activation (`agent/pre-step` hook)
 
-| 档位 | 条件 | 注入内容 |
+Before every step, the plugin matches the user's message against every skill and injects matches at one of two levels:
+
+| Level | Condition | Injected content |
 | --- | --- | --- |
-| **自动加载 (auto)** | skill 声明了触发词(或 `metadata.activation: auto`)且命中 | 完整 `<skill_content>` + 激活提醒(告诉模型"已自动加载,不要再调用 skill 工具") |
-| **建议加载 (suggest)** | 描述/`whenToUse` 有较高词元重合 | 一条轻量 `<system-reminder>`:列出匹配的 skill 和命中原因,提示模型按需调用 `skill` 工具 |
+| **Automatic loading (`auto`)** | A skill declares triggers (or `metadata.activation: auto`) and matches | Full `<skill_content>` plus a reminder that the skill is already loaded and the model should not call the `skill` tool again |
+| **Suggested loading (`suggest`)** | The description or `whenToUse` has high token overlap | A lightweight `<system-reminder>` listing matching skills and reasons, prompting the model to call the `skill` tool when appropriate |
 
-匹配打分:skill 名提及 (+12) > 触发词/正则 (+7) > 描述词元重合 (+4~6)。默认每轮最多自动加载 2 个、建议 3 个,可配置。
+Match scoring: explicit skill-name mention (+12) > trigger phrase or regular expression (+7) > description token overlap (+4–6). By default, each turn loads at most two skills automatically and suggests three; both limits are configurable.
 
-**去重与上下文**:激活标记作为 `skill-manager` 源消息写进会话历史;只要标记仍在可见 surface 内,同一 skill 不会重复注入全文(压缩后会自动重新注入)。规则:同一批消息里已有注入 → 跳过;已激活且仍可见 → 跳过。
+**Deduplication and context:** activation markers are stored in conversation history as `skill-manager` source messages. As long as a marker remains visible in the context surface, the same skill's full content is not injected again. After compaction removes it, the skill can be injected again automatically. Within the same message batch, an existing injection is also skipped.
 
-### 2. Skill 级 hook(对标 Claude Code / Codex)
+### 2. Skill-level hooks (aligned with Claude Code and Codex)
 
-DSH 宿主层事件(hook 接缝)早已齐全,本插件把 **skill 声明**接到这些事件上,命名与 Claude Code 的 hook 事件一一对应:
+The DSH host already exposes the necessary hook events. This plugin connects skill declarations to those events with a one-to-one mapping to Claude Code hook names:
 
-| Claude Code hook | DSH 宿主事件 | 插件实现 |
+| Claude Code hook | DSH host event | Plugin implementation |
 | --- | --- | --- |
-| `UserPromptSubmit` | `agent/pre-step` | ✅ skill 在会话中处于激活态时,每次提交注入 `hooks.UserPromptSubmit.inject` 文本 |
-| `PreToolUse` | `tools/pre-execute` | ✅ 按工具名 + 参数模式返回 **allow / deny / ask**(decision+reason) |
-| `PostToolUse` | `tools/post-execute` | ✅ 工具结果命中 `when` → 立即把该 skill 指令附加到下一步(`activate`) |
-| `PostToolUseFailure` | `tools/post-execute`(错误结果一样到达) | ✅ 同 PostToolUse,`when: "re:exit code [1-9]"` 即失败触发 |
-| `SessionStart` | `agent/session-start` | ✅ 首个步骤无需匹配即加载(`SessionStart.activate`) |
-| `SessionEnd` / `Stop` | `agent/disposed` / `agent/turn-stopping` | ⚠️ 以 `skill-manager/hook` 事件观察,无内容注入 |
-| `PreCompact` | (核心无对应事件) | ⚠️ 未实现;压缩后激活标记失效会自动重新注入 |
+| `UserPromptSubmit` | `agent/pre-step` | ✅ When the skill is active in the session, injects `hooks.UserPromptSubmit.inject` on every submission |
+| `PreToolUse` | `tools/pre-execute` | ✅ Returns **allow / deny / ask** (`decision` + `reason`) based on tool name and argument patterns |
+| `PostToolUse` | `tools/post-execute` | ✅ When a tool result matches `when`, immediately appends the skill instructions to the next step (`activate`) |
+| `PostToolUseFailure` | `tools/post-execute` (errors arrive through the same event) | ✅ Same as PostToolUse; `when: "re:exit code [1-9]"` triggers on failure |
+| `SessionStart` | `agent/session-start` | ✅ Loads on the first step without matching (`SessionStart.activate`) |
+| `SessionEnd` / `Stop` | `agent/disposed` / `agent/turn-stopping` | ⚠️ Observable through `skill-manager/hook`, with no content injection |
+| `PreCompact` | No corresponding core event | ⚠️ Not implemented; activation markers disappear after compaction, allowing automatic reinjection |
 
-Codex 侧对标:skill 模式采用 Codex 词汇的别名(`manual`/`disabled` 等价于本插件的 `off`,仅显式调用;`auto` 语义对比见下表)。Codex 的 `auto`(模型可按需调用)= 本插件的 `suggest`;
+Codex terminology is supported through aliases: `manual` and `disabled` are equivalent to this plugin's `off` mode and require explicit invocation. Codex's `auto` (the model may invoke a skill when needed) corresponds to this plugin's `suggest` mode.
 
-**SKILL.md 中的声明**(全部通过 `metadata`,不改 DSH 核心):
+**Declarations in SKILL.md** (implemented entirely through `metadata`, with no DSH core changes):
 
 ```yaml
 ---
 name: repo-hardening
 description: Review and harden a repository with build/test gates.
 metadata:
-  activation: auto             # auto | suggest | off (兼容 manual/disabled)
+  activation: auto             # auto | suggest | off (manual/disabled aliases are supported)
   triggers:
     - "harden"
     - "build fails"
     - "re:exit code \\d+"
   hooks:
-    UserPromptSubmit:          # 仅当本 skill 在会话中激活时,每轮注入这段上下文
-      inject: "硬性要求:先跑 build 与 test,再下结论。"
-    PreToolUse:                # 工具调用门禁
+    UserPromptSubmit:          # Injected every turn while this skill is active
+      inject: "Hard requirement: run build and tests before reaching a conclusion."
+    PreToolUse:                # Tool-call gate
       - tool: bash
-        when: "git push"       # 子串或 re:<pattern>,省略 = 全部
+        when: "git push"       # Substring or re:<pattern>; omitted means all calls
         decision: deny         # allow | deny | ask
-        reason: "不允许直接 push"
-    PostToolUse:               # 工具结果 → 立即激活本 skill
+        reason: "Direct pushes are not allowed"
+    PostToolUse:               # Tool result immediately activates this skill
       - tool: bash
         when: "re:exit code [1-9]"
         action: activate
-    SessionStart:              # 会话开始即激活(无需匹配)
+    SessionStart:              # Activate at session start without matching
       activate: true
 ---
 ```
 
-- `triggers`:字符串数组。普通条目 = 大小写不敏感的子串匹配;`re:<pattern>` = 正则(不合法正则会被忽略)。
-- `activation`:该 skill 在匹配时的默认档位。未声明时:有 triggers → `auto`,否则 `suggest`。
-- `hooks`:Claude Code 事件名 + 结构化动作;`PreToolUse` 的 `tool` 可用 `*` 通配所有工具。
+- `triggers`: an array of strings. Plain entries are case-insensitive substring matches; entries starting with `re:` are regular expressions. Invalid regular expressions are ignored.
+- `activation`: the default level when the skill matches. If omitted, skills with triggers use `auto`; all others use `suggest`.
+- `hooks`: Claude Code event names plus structured actions. `PreToolUse.tool` accepts `*` as a wildcard for all tools.
 
-**hook 事件(宿主级可监听)**:除 `skills/change` 外,插件在每个 hook 执行时派发:
-- `skill-manager/hook`(emit)— `{ event, skill, action, detail, at }`,例如 PreToolUse deny、PostToolUse activate。
-- `skill-manager/update`(emit)— 安装/更新/卸载后的同步结果。
+**Host-level observable events:** in addition to `skills/change`, the plugin emits:
 
-**用户侧覆盖(第三方仓库推荐)**:`metadata` 是上游文件、update 会覆盖,所以触发词与 hook 都可以放在插件状态里(与声明合并/按事件替换):
+- `skill-manager/hook` — `{ event, skill, action, detail, at }`, for events such as PreToolUse denial or PostToolUse activation.
+- `skill-manager/update` — synchronization results after install, update, or uninstall operations.
+
+**User-side overrides (recommended for third-party repositories):** because upstream updates overwrite `metadata`, triggers and hooks can also be stored in plugin state. Stored settings are merged with declarations, or replace them per event:
 
 ```sh
-# Settings 界面每个 skill 行有"触发词"输入框(逗号分隔),或者让模型调用:
-skill_manager set-triggers ponytail-review triggers=["review this diff","过度设计"]
+# Use the trigger input in Settings, or ask the model to call:
+skill_manager set-triggers ponytail-review triggers=["review this diff","over-engineering"]
 skill_manager set-hooks repo-hardening hooks={ "PostToolUse": [{ "tool": "bash", "when": "re:exit code [1-9]", "action": "activate" }] }
 ```
 
-### 3. 从 GitHub 安装与更新
+### 3. Install and update from GitHub
 
-- **安装**:`install <owner/repo|git-url> [ref]` — 接受 Claude/Codex marketplace 的 `owner/repo` 简写或完整 Git URL，浅克隆(single-branch)到 `<DSH_HOME>/skill-sources/<slug>`,自动发现仓库里的 `SKILL.md` 目录(深度 ≤3,跳过 .git/node_modules/dist/build),把每个 skill 目录拷贝进 `<DSH_HOME>/skills/<name>`。skill 名取自 frontmatter `name`。
-- **插件包**:优先读取 `.codex-plugin/plugin.json`,其次读取 `.claude-plugin/plugin.json`;管理页显示插件名、版本、skills 与 hook 数量。manifest 指向仓库内的 Node lifecycle hook 可运行 `SessionStart` / `UserPromptSubmit`;其他事件或命令类型标记为 unsupported。
-- **更新**:`update` — 对每个来源 `git fetch --depth 1 origin <ref>` + `git reset --hard FETCH_HEAD`,然后**权威同步**(删除旧拷贝、重新拷贝已安装的 skill)。返回每个 skill 的 commit 变化(旧 → 新)。
-- 更新后无需手动刷新:filesystem skill provider 的文件监视器会自动失效缓存并重发 `skills/change`,模型目录随之更新。
-- 状态记录在 `<DSH_HOME>/skill-manager.json`:来源、ref、commit、每个 skill 的安装路径、用户模式覆盖、最近操作历史(50 条)。
+- **Install:** `install <owner/repo|git-url> [ref]` accepts either the `owner/repo` shorthand used by Claude/Codex marketplaces or a full Git URL. It performs a shallow, single-branch clone into `<DSH_HOME>/skill-sources/<slug>`, discovers directories containing `SKILL.md` up to depth 3 (excluding `.git`, `node_modules`, `dist`, and `build`), and copies each skill directory into `<DSH_HOME>/skills/<name>`. Skill names come from the frontmatter `name` field.
+- **Plugin packages:** `.codex-plugin/plugin.json` is preferred, followed by `.claude-plugin/plugin.json`. The management page displays the plugin name, version, skills, and hook count. Node lifecycle hooks referenced by the manifest can run for `SessionStart` and `UserPromptSubmit`; other events or command-based hook types are marked unsupported.
+- **Update:** for every source, `update` runs `git fetch --depth 1 origin <ref>` followed by `git reset --hard FETCH_HEAD`, then performs an **authoritative sync** by deleting old copies and recopying installed skills. The result reports commit changes for each skill (old → new).
+- No manual refresh is needed after an update. The filesystem skill provider invalidates its cache through file watching, re-emits `skills/change`, and refreshes the model's skill catalog.
+- State is stored in `<DSH_HOME>/skill-manager.json`, including sources, refs, commits, install paths, user mode overrides, and the 50 most recent operations.
 
-安全:git 来源白名单(`owner/repo`、https://、git@、ssh://),参数数组直传 `git`;hook 不经 shell,只执行 manifest 中指向仓库内部的 `node` 脚本。安装含 hook 的插件等同于信任其代码。
+Security: Git sources are restricted to an allowlist (`owner/repo`, `https://`, `git@`, and `ssh://`), arguments are passed directly to `git` as an array, and hooks never run through a shell. Only Node scripts referenced by a manifest and located inside the repository can be executed. Installing a plugin that contains hooks means trusting its code.
 
-### 项目 workspace 专属 skill
+### Project-specific workspace skills
 
-filesystem provider 按 `cwd` 扫描多个根,优先级从高到低(高覆盖低):
+The filesystem provider scans multiple roots based on `cwd`, ordered from highest to lowest priority:
 
-| 根 | 路径 | source 值 |
+| Root | Path | `source` value |
 | --- | --- | --- |
-| 项目专属 | `<项目>/.dsh/skills` | `project-dsh` |
-| 项目专属 | `<项目>/.agents/skills` | `project-agents` |
-| 自定义 | 宿主配置的目录 | `custom` |
-| 用户级 | `<DSH_HOME>/skills` | `user-dsh` |
-| 用户级 | `<agentsHome>/skills` | `user-agents` |
-| 内置 | bundled | `bundled` |
+| Project-specific | `<project>/.dsh/skills` | `project-dsh` |
+| Project-specific | `<project>/.agents/skills` | `project-agents` |
+| Custom | Host-configured directory | `custom` |
+| User-level | `<DSH_HOME>/skills` | `user-dsh` |
+| User-level | `<agentsHome>/skills` | `user-agents` |
+| Built-in | Bundled | `bundled` |
 
-本插件对项目 skill 的处理:
+The plugin handles project skills as follows:
 
-- **主动匹配与自动激活**:pre-step 按会话 `cwd` 调用 `ctx.skills.snapshot({cwd, scope})`,项目 skill 与用户级 skill 同等参与打分/注入,同名时项目根自动胜出(rank 更小)。
-- **覆盖作用域隔离(重要)**:`set-mode` / `set-triggers` / `set-hooks` 的记录按 `scope`(user|project)+ `cwd` 存储。项目 skill 的同名记录**只在自己的 workspace 生效**,绝不会被用户级的同名配置污染,反之亦然。
-- **管理界面**:Settings → Skill 管理 顶部有"项目 workspace cwd"输入框,留空列出用户级+内置 skill,填写后列出该项目的专属 skill(每行显示 `source` 徽标,包含其名字/触发词/hook/模式编辑)。
-  Web Settings 没有 agent preset,因此 manager 会直接合并 `<DSH_HOME>/skills` 的一级有效 skill;若与项目 skill 同名,项目 catalog 项保持优先。
-- **模型工具**:`skill_manager status|set-*` 支持 `scope: project` + `cwd: <路径>`(项目记录必须带 cwd)。
-- **hook 索引按 cwd 建立**:每个 workspace 的 PreToolUse/PostToolUse/SessionStart hook 独立解析,同一项目会话用同一索引(目录变更经 `skills/change` 自动失效)。
-- **更新模型**:项目 skill 由项目的 git 仓库管理(它们本就在项目里),manager 的 `update` 只同步用户级来源;项目内改动由 watcher 自动刷新目录。
+- **Proactive matching and automatic activation:** pre-step calls `ctx.skills.snapshot({cwd, scope})` for each session. Project and user-level skills participate equally in scoring and injection; for duplicate names, the project root wins automatically because it has a lower rank.
+- **Isolated override scopes:** `set-mode`, `set-triggers`, and `set-hooks` records are stored by `scope` (`user` or `project`) plus `cwd`. A project skill's same-name settings apply only to that workspace and never leak into user-level settings, or vice versa.
+- **Management UI:** Settings → Skill Management includes a “Project workspace cwd” field. Leaving it blank lists user-level and built-in skills; entering a path also lists that project's skills. Each row shows the source badge and allows editing the name, triggers, hooks, and mode. Web Settings has no agent preset, so the manager directly merges first-level valid skills from `<DSH_HOME>/skills`; if a project skill has the same name, its catalog entry remains authoritative.
+- **Model tool:** `skill_manager status|set-*` supports `scope: project` plus `cwd: <path>`. Project records must include `cwd`.
+- **Hook indexes are built per cwd:** every workspace gets an independent PreToolUse, PostToolUse, and SessionStart hook index. The same project session uses the same index; directory changes invalidate it through `skills/change`.
+- **Update model:** project skills are managed by the project's own Git repository. The manager's `update` operation synchronizes only user-level sources, while the watcher refreshes project-local changes automatically.
 
-### 4. Settings 管理界面 + 模型工具
+### 4. Settings UI and model tool
 
-- **Settings → "Skill 管理"**:总开关(启用主动使用)、每轮最大自动加载数、"从 GitHub 更新"按钮、Git 仓库安装表单、每个 skill 的模式下拉(auto/suggest/off)、触发词展示、git 来源与 commit、卸载按钮、最近记录。
-- **模型工具 `skill_manager`**:`status` / `install <url>` / `update` / `uninstall <name>` / `set-mode <name> <mode>` / `set-config`。说一句"从 GitHub 更新 skill"即可触发。
+- **Settings → “Skill Management”:** master switch for proactive usage, maximum automatic loads per turn, “Update from GitHub” button, Git repository installation form, mode selector (`auto` / `suggest` / `off`) for each skill, trigger display, Git source and commit details, uninstall button, and recent history.
+- **Model tool `skill_manager`:** `status`, `install <url>`, `update`, `uninstall <name>`, `set-mode <name> <mode>`, and `set-config`. Saying “update skills from GitHub” is enough to trigger it.
 
-## 安装
+## Installation
 
 ```sh
-# 1. 把插件目录 link 进 web profile(或使用 dsh plugin 子命令)
+# 1. Link the plugin directory into the web profile (or use the dsh plugin command)
 cd /data/dsh/profiles/web
 pnpm add link:/data/dsh/home/dsh-skills-manager
 
-# 2. 把包名加入 profile package.json 的 dsh.profile.bundles:
+# 2. Add the package name to dsh.profile.bundles in the profile's package.json:
 #    "dsh-skills-manager"
-# 3. 重启 web profile 使宿主侧生效;客户端 bundle 会自动重建
+# 3. Restart the web profile so the host-side plugin takes effect;
+#    the client bundle will rebuild automatically.
 ```
 
-插件通过自身的 `cordis.patch.yml` 向 composition 插入一行 `skill-manager`(宿主级),对**所有会话**生效。
+The plugin adds a `skill-manager` entry to the composition through its own `cordis.patch.yml` and applies at the host level to **all sessions**.
 
-## Skill 目录约定
+## Skill directory conventions
 
-- 管理对象是 `<DSH_HOME>/skills`(filesystem provider 的 user root)。
-- 本地手写的 skill 不受 git 管理;只有从来源安装的 skill 才能被"更新"和"移除"。
-- `set-mode off` 只关掉自动参与,模型仍可手动调用 `skill` 工具。
+- Managed skills live in `<DSH_HOME>/skills`, the filesystem provider's user root.
+- Locally authored skills are not managed by Git. Only skills installed from a source can be updated or removed.
+- `set-mode off` disables automatic participation, but the model can still invoke the skill manually through the `skill` tool.
 
-## 扩展:给匹配器接更多输入源
+## Extension: connect more input sources to the matcher
 
-"工具输出触发"现在内置为 `PostToolUse` hook;任何插件仍可在宿主事件上补充来源,例如把外部通知加入提示词:
+Tool-output activation is built in through the `PostToolUse` hook. Other plugins can still contribute inputs through host events, for example by adding an external notification to the prompt:
 
 ```js
 ctx.on("agent/pre-step", async (payload, next) => {
   const decision = await next();
   if (decision.kind !== "enter") return decision;
-  // 把自定义上下文拼进该步骤
+  // Append custom context to this step
   return { kind: "enter", messages: [...decision.messages, extra] };
 });
 ```
 
-## 开发与测试
+## Development and testing
 
 ```sh
-pnpm test      # node --test test.mjs,纯逻辑 18 个用例
+pnpm test      # node --test test.mjs; 18 pure-logic test cases
 pnpm lint      # node --check
 ```
 
-`lib.js`(匹配/打分/状态/manifest)为纯函数,可直接单测;`index.js` 只承担接线(事件、工具、RPC、git)。
+`lib.js` (matching, scoring, state, and manifest handling) contains pure functions and can be tested directly. `index.js` is responsible only for integration: events, tools, RPC, and Git.
 
 ## License
 
