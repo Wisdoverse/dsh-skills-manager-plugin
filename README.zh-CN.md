@@ -306,6 +306,7 @@ pnpm lint
 | `cordis.patch.yml` | 宿主 composition 补丁 |
 
 欢迎在 [GitHub 仓库](https://github.com/Wisdoverse/dsh-skills-manager-plugin)提交 Issue 或 Pull Request。
+开发环境、验证命令与 Pull Request 要求见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ## License
 

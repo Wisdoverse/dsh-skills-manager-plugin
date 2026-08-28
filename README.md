@@ -306,6 +306,7 @@ pnpm lint
 | `cordis.patch.yml` | Host composition patch |
 
 Issues and pull requests are welcome in the [GitHub repository](https://github.com/Wisdoverse/dsh-skills-manager-plugin).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, validation, and pull-request expectations.
 
 ## License
 
