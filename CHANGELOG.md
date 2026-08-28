@@ -6,6 +6,10 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Token-free npm Trusted Publishing from version-matched GitHub tags, with release gates and automatic provenance.
+
 ## 1.0.0 - 2026-08-29
 
 ### Added

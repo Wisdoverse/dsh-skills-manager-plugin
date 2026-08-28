@@ -59,6 +59,16 @@ Do not use a production profile for destructive installation experiments.
 - Call out compatibility, security, data, or migration effects explicitly.
 - Never commit credentials, private skill sources, generated package archives, or a local DSH Home.
 
+## Releases
+
+npm releases use Trusted Publishing with GitHub Actions and do not require an `NPM_TOKEN` secret. After the version and changelog update have landed on `main` and CI is green:
+
+1. Create a tag named exactly `v<package.json version>` from the release commit.
+2. Push the tag to GitHub, or create a GitHub Release with that new tag.
+3. Confirm the `Publish to npm` workflow passes and the npm `latest` tag points to the new version.
+
+The workflow rejects a Git tag that does not match `package.json`, reruns the repository gates, publishes through npm OIDC, and receives automatic provenance from npm. Published npm versions are immutable, so never reuse a version number.
+
 ## 中文说明
 
-提交前请运行 `pnpm lint`、`pnpm test` 与 `pnpm pack --dry-run`。涉及宿主接线时，还应在隔离的 DSH Home 中执行安装与 `--dump-config` 烟测。中英文 README 的功能、安装、兼容性、权限和安全说明必须同步更新。
+提交前请运行 `pnpm lint`、`pnpm test` 与 `pnpm pack --dry-run`。涉及宿主接线时，还应在隔离的 DSH Home 中执行安装与 `--dump-config` 烟测。中英文 README 的功能、安装、兼容性、权限和安全说明必须同步更新。发布时更新版本号与 changelog，并推送与版本完全一致的 `v*` 标签；GitHub Actions 会通过 npm OIDC 完成无 Token 发布。
