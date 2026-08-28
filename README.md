@@ -256,6 +256,7 @@ Project-local skills remain owned by the project's Git repository. The manager's
 
 Settings → **Skill Management** provides:
 
+- English and Simplified Chinese copy that follows the active DSH display language;
 - a master switch for proactive activation;
 - per-turn auto-load limits;
 - GitHub install and update controls;

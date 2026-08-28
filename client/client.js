@@ -10,70 +10,166 @@ window.__ModuleLoader__.load({
 
     const CHANNEL = "/skill-manager";
     const MODES = ["auto", "suggest", "off"];
-    const MODE_LABELS = { auto: "自动加载", suggest: "建议加载", off: "关闭" };
+    const MODE_KEYS = { auto: "modeAuto", suggest: "modeSuggest", off: "modeOff" };
+    const SOURCE_KEYS = {
+      "user-dsh": "sourceUserDsh",
+      "user-agents": "sourceUserAgents",
+      "project-dsh": "sourceProjectDsh",
+      "project-agents": "sourceProjectAgents",
+      custom: "sourceCustom",
+      bundled: "sourceBundled",
+    };
+    const EVENT_KEYS = {
+      install: "eventInstall",
+      update: "eventUpdate",
+      "update-error": "eventUpdateError",
+      uninstall: "eventUninstall",
+      "set-mode": "eventSetMode",
+      "set-triggers": "eventSetTriggers",
+      "set-hooks": "eventSetHooks",
+      "set-config": "eventSetConfig",
+    };
 
     const DICT = {
       zh: {
         nav: "Skill 管理",
-        intro: "管理 Skill 的主动使用、触发 hook 与 GitHub 同步。自动加载会在任务匹配 skill 声明时直接把完整指令注入对话;建议加载只提示模型去加载;关闭则不参与。",
+        intro: "管理 Skill 的主动加载、触发词、Git 来源与项目级覆盖。界面会跟随 DSH 的显示语言。",
+        skillsRoot: "Skill 目录",
+        workspaceLabel: "项目工作区（cwd）",
+        workspacePlaceholder: "留空显示用户级 Skill；填写后同时显示项目 .dsh/skills 与 .agents/skills",
         enabled: "启用主动使用",
-        enabledHint: "关闭后 skill 管理完全旁路,仅保留手动调用。",
+        enabledHint: "关闭后仅保留手动调用。",
         maxAuto: "每轮最多自动加载",
-        maxAutoHint: "0–8;超出部分转为建议。",
+        maxAutoHint: "0–8；超出部分转为建议加载。",
         update: "从 GitHub 更新",
         updating: "正在同步…",
-        refresh: "刷新列表",
-        installTitle: "从 Git 仓库安装 skill",
+        refresh: "刷新",
+        refreshing: "正在刷新…",
+        gitUnavailable: "未检测到 Git。",
+        installTitle: "从 Git 仓库安装 Plugin / Skills",
         urlPlaceholder: "owner/repo 或 https://github.com/owner/repo.git",
-        refPlaceholder: "分支/标签(可选)",
+        refPlaceholder: "分支/标签（可选）",
         installBtn: "安装并发现",
+        installing: "正在安装…",
         installHint: "识别 Codex/Claude plugin manifest、skills 与仓库内 node lifecycle hooks；其他命令 hook 不执行。",
-        modeLabel: "模式",
+        modeAuto: "自动加载",
+        modeSuggest: "建议加载",
+        modeOff: "关闭",
         triggerLabel: "触发词",
-        sourceLabel: "来源",
-        localSkill: "本地(非 git 管理)",
-        notManaged: "非 git 管理的 skill 请直接修改技能目录。",
+        triggerPlaceholder: "触发词（逗号分隔，支持 re:正则）",
+        localSkill: "本地 Skill（非 Git 管理）",
         uninstall: "移除",
         uninstalling: "移除中…",
-        actionsLabel: "操作",
+        confirmUninstall: "确认从本地 Skills 目录移除该 Skill？",
+        skillsCount: "Skills",
+        hooksCount: "Hooks",
+        unsupportedHooksCount: "不支持的 Hooks",
+        managedSources: "已管理 Plugin / Git 来源",
+        noSources: "尚未通过管理器安装 Plugin 来源。",
+        localProjectSkills: "本地 / 项目 Skills",
         recentLabel: "最近记录",
-        noSkills: "未发现 skill。",
+        noSkills: "未发现 Skill。",
+        loading: "正在加载…",
         errorTitle: "加载失败",
-        emptyTrigger: "—",
-        confirmUninstall: "确认从本地 skills 目录移除该 skill?",
-        saveFail: "修改未保存",
-        syncDone: "同步完成",
+        rpcFailed: "请求失败",
+        actionFailed: "操作失败",
+        installDone: "安装完成",
+        updateDone: "同步完成",
+        uninstallDone: "移除完成",
+        modeSaved: "模式已保存",
+        triggersSaved: "触发词已保存",
+        configSaved: "设置已保存",
+        refreshDone: "列表已刷新",
+        warnings: "警告",
+        updated: "已更新",
+        removed: "已移除",
+        unchanged: "无变化",
+        error: "错误",
+        noChanges: "没有变化",
+        sourceUserDsh: "用户级 DSH",
+        sourceUserAgents: "用户级 Agents",
+        sourceProjectDsh: "项目级 DSH",
+        sourceProjectAgents: "项目级 Agents",
+        sourceCustom: "自定义来源",
+        sourceBundled: "内置来源",
+        eventInstall: "安装",
+        eventUpdate: "更新",
+        eventUpdateError: "更新错误",
+        eventUninstall: "移除",
+        eventSetMode: "设置模式",
+        eventSetTriggers: "设置触发词",
+        eventSetHooks: "设置 Hooks",
+        eventSetConfig: "设置配置",
       },
       en: {
         nav: "Skill manager",
-        intro: "Manage proactive skill usage, trigger hooks, and GitHub sync. Auto mode injects the full instructions when a task matches the skill's declared triggers; suggest only prompts the model; off disables participation.",
+        intro: "Manage proactive loading, triggers, Git sources, and project-scoped overrides. The UI follows the DSH display language.",
+        skillsRoot: "Skills directory",
+        workspaceLabel: "Project workspace (cwd)",
+        workspacePlaceholder: "Leave blank for user skills; enter a path to include project .dsh/skills and .agents/skills",
         enabled: "Enable proactive usage",
-        enabledHint: "When off, the manager bypasses every step and only manual invocation remains.",
+        enabledHint: "When disabled, only manual invocation remains.",
         maxAuto: "Max auto-loads per turn",
         maxAutoHint: "0–8; overflow becomes suggestions.",
         update: "Update from GitHub",
         updating: "Syncing…",
         refresh: "Refresh",
-        installTitle: "Install skills from a git repository",
+        refreshing: "Refreshing…",
+        gitUnavailable: "Git was not detected.",
+        installTitle: "Install plugins / skills from a Git repository",
         urlPlaceholder: "owner/repo or https://github.com/owner/repo.git",
         refPlaceholder: "Branch/tag (optional)",
         installBtn: "Install & discover",
+        installing: "Installing…",
         installHint: "Discovers Codex/Claude plugin manifests, skills, and in-repo Node lifecycle hooks; other command hooks stay disabled.",
-        modeLabel: "Mode",
+        modeAuto: "Auto-load",
+        modeSuggest: "Suggest",
+        modeOff: "Off",
         triggerLabel: "Triggers",
-        sourceLabel: "Source",
-        localSkill: "local (not git-managed)",
-        notManaged: "Edit the skills directory directly for non-git skills.",
+        triggerPlaceholder: "Triggers (comma-separated; re:regex supported)",
+        localSkill: "Local skill (not Git-managed)",
         uninstall: "Remove",
         uninstalling: "Removing…",
-        actionsLabel: "Actions",
+        confirmUninstall: "Remove this skill from the local skills directory?",
+        skillsCount: "Skills",
+        hooksCount: "Hooks",
+        unsupportedHooksCount: "Unsupported hooks",
+        managedSources: "Managed plugins / Git sources",
+        noSources: "No plugin source has been installed through the manager.",
+        localProjectSkills: "Local / project skills",
         recentLabel: "Recent activity",
         noSkills: "No skills found.",
+        loading: "Loading…",
         errorTitle: "Load failed",
-        emptyTrigger: "—",
-        confirmUninstall: "Remove this skill from the local skills directory?",
-        saveFail: "Change not saved",
-        syncDone: "Sync finished",
+        rpcFailed: "Request failed",
+        actionFailed: "Action failed",
+        installDone: "Installation complete",
+        updateDone: "Sync complete",
+        uninstallDone: "Removal complete",
+        modeSaved: "Mode saved",
+        triggersSaved: "Triggers saved",
+        configSaved: "Settings saved",
+        refreshDone: "List refreshed",
+        warnings: "Warnings",
+        updated: "Updated",
+        removed: "Removed",
+        unchanged: "Unchanged",
+        error: "Error",
+        noChanges: "No changes",
+        sourceUserDsh: "User DSH",
+        sourceUserAgents: "User Agents",
+        sourceProjectDsh: "Project DSH",
+        sourceProjectAgents: "Project Agents",
+        sourceCustom: "Custom source",
+        sourceBundled: "Bundled source",
+        eventInstall: "Install",
+        eventUpdate: "Update",
+        eventUpdateError: "Update error",
+        eventUninstall: "Remove",
+        eventSetMode: "Set mode",
+        eventSetTriggers: "Set triggers",
+        eventSetHooks: "Set hooks",
+        eventSetConfig: "Set configuration",
       },
     };
 
@@ -151,7 +247,7 @@ window.__ModuleLoader__.load({
       noticeOk: { color: "var(--dsw-alias-label-primary)" },
     };
 
-    function ManagerSection({ connection }) {
+    function ManagerSection({ connection, t }) {
       const [view, setView] = useState(null);
       const [error, setError] = useState(null);
       const [notice, setNotice] = useState(null);
@@ -161,11 +257,38 @@ window.__ModuleLoader__.load({
       const [ref, setRef] = useState("");
       const [cwd, setCwd] = useState("");
 
+      const modeLabel = (mode) => MODE_KEYS[mode] ? t(MODE_KEYS[mode]) : mode;
+      const sourceLabel = (source) => SOURCE_KEYS[source] ? t(SOURCE_KEYS[source]) : source;
+      const eventLabel = (kind) => EVENT_KEYS[kind] ? t(EVENT_KEYS[kind]) : kind;
+
+      const translatedDetail = (value) => {
+        if (typeof value !== "string") return "";
+        return value
+          .replace(/^installed:/gm, `${t("installDone")}:`)
+          .replace(/^warnings:/gm, `${t("warnings")}:`)
+          .replace(/^updated:/gm, `${t("updated")}:`)
+          .replace(/^removed:/gm, `${t("removed")}:`)
+          .replace(/^unchanged:/gm, `${t("unchanged")}:`)
+          .replace(/^error:/gm, `${t("error")}:`)
+          .replace(/^no changes$/gm, t("noChanges"));
+      };
+
+      const successNotice = (label, value, payload) => {
+        if (label === "install") return translatedDetail(value) || t("installDone");
+        if (label === "update") return translatedDetail(value) || t("updateDone");
+        if (label === "uninstall") return `${t("uninstallDone")}: ${payload?.name ?? ""}`.trim();
+        if (label === "set-mode") return `${t("modeSaved")}: ${modeLabel(payload?.mode ?? "")}`;
+        if (label === "set-triggers") return t("triggersSaved");
+        if (label === "set-config") return t("configSaved");
+        if (label === "refresh") return t("refreshDone");
+        return translatedDetail(value) || t("refreshDone");
+      };
+
       const call = useCallback(async (endpoint, payload, signal) => {
         const result = await connection.rpc.call(CHANNEL, endpoint, payload ?? {}, signal);
-        if (!result.ok) throw new Error((result.error && result.error.message) || "rpc failed");
+        if (!result.ok) throw new Error((result.error && result.error.message) || t("rpcFailed"));
         return result.value;
-      }, [connection]);
+      }, [connection, t]);
 
       const scopeOf = (skill) =>
         skill.source === "project-dsh" || skill.source === "project-agents" ? "project" : "user";
@@ -194,11 +317,11 @@ window.__ModuleLoader__.load({
         try {
           const message = await call(endpoint, payload);
           setNoticeOk(true);
-          setNotice(message);
+          setNotice(successNotice(label, message, payload));
           await reload();
         } catch (reason) {
           setNoticeOk(false);
-          setNotice((reason && reason.message) || String(reason));
+          setNotice(`${t("actionFailed")}: ${(reason && reason.message) || String(reason)}`);
         } finally {
           setBusy(null);
         }
@@ -211,9 +334,11 @@ window.__ModuleLoader__.load({
 
       if (error) {
         return h("section", { style: styles.section },
-          h("p", { style: { ...styles.notice, ...styles.noticeError } }, error));
+          h("p", { style: { ...styles.notice, ...styles.noticeError } },
+            h("strong", null, `${t("errorTitle")}: `),
+            error));
       }
-      if (!view) return h("section", { style: styles.section }, "…");
+      if (!view) return h("section", { style: styles.section }, t("loading"));
 
       const config = view.config || {};
       const skills = view.skills || [];
@@ -236,21 +361,24 @@ window.__ModuleLoader__.load({
           disabled: busy !== null,
           onChange: (event) => run("set-mode", "set-mode", { name: skill.name, mode: event.target.value, ...targetOf(skill) }),
           style: styles.select,
-        }, MODES.map((mode) => h("option", { key: mode, value: mode }, MODE_LABELS[mode])));
+        }, MODES.map((mode) => h("option", { key: mode, value: mode }, modeLabel(mode))));
         const removeButton = managed
           ? h("button", {
               type: "button",
               disabled: busy !== null,
-              onClick: () => run("uninstall", "uninstall", { name: skill.name }),
+              onClick: () => {
+                if (!window.confirm(t("confirmUninstall"))) return;
+                run("uninstall", "uninstall", { name: skill.name });
+              },
               style: styles.button,
-            }, "移除")
+            }, busy === "uninstall" ? t("uninstalling") : t("uninstall"))
           : null;
-        const sourceText = grouped ? null : (managed ? `${skill.git.sourceUrl} @ ${skill.git.commit.slice(0, 7)}` : "本地 skill");
+        const sourceText = grouped ? null : (managed ? `${skill.git.sourceUrl} @ ${skill.git.commit.slice(0, 7)}` : t("localSkill"));
         const triggersInput = h("input", {
           type: "text",
           key: `${skill.name}-${(skill.userTriggers || []).join(",")}`,
           defaultValue: (skill.triggers || []).join(", "),
-          placeholder: "触发词(逗号分隔,支持 re:正则)",
+          placeholder: t("triggerPlaceholder"),
           disabled: busy !== null,
           onBlur: (event) => commitTriggers(skill, event.target.value),
           onKeyDown: (event) => {
@@ -261,11 +389,11 @@ window.__ModuleLoader__.load({
         return h("div", { key: `${skill.cwd ?? ""}:${skill.name}`, style: grouped ? styles.skillItem : styles.card },
           h("div", { style: styles.skillLine },
             h("span", { style: styles.skillName }, skill.name),
-            h("span", { style: styles.chip }, skill.source),
+            h("span", { style: styles.chip }, sourceLabel(skill.source)),
             modeSelect,
             removeButton,
             sourceText && h("span", { style: styles.git }, sourceText),
-            (skill.hooksCount || 0) > 0 && h("span", { style: styles.chip }, `hooks: ${skill.hooksCount}`)),
+            (skill.hooksCount || 0) > 0 && h("span", { style: styles.chip }, `${t("hooksCount")}: ${skill.hooksCount}`)),
           h("p", { style: styles.skillDesc }, skill.description || "—"),
           h("div", { style: styles.row }, triggersInput));
       };
@@ -281,9 +409,9 @@ window.__ModuleLoader__.load({
           h("div", { style: styles.skillLine },
             h("span", { style: styles.skillName }, plugin.name || source.url),
             plugin.version && h("span", { style: styles.chip }, `v${plugin.version}`),
-            h("span", { style: styles.chip }, `skills: ${sourceSkills.length}`),
-            h("span", { style: styles.chip }, `hooks: ${hooks}`),
-            unsupported > 0 && h("span", { style: styles.chip }, `unsupported hooks: ${unsupported}`)),
+            h("span", { style: styles.chip }, `${t("skillsCount")}: ${sourceSkills.length}`),
+            h("span", { style: styles.chip }, `${t("hooksCount")}: ${hooks}`),
+            unsupported > 0 && h("span", { style: styles.chip }, `${t("unsupportedHooksCount")}: ${unsupported}`)),
           plugin.description && h("p", { style: styles.skillDesc }, plugin.description),
           h("p", { style: styles.meta }, `${source.url} @ ${(source.commit || "").slice(0, 7)}`),
           sourceSkills.map((skill) => skillCard(skill, true)));
@@ -294,16 +422,17 @@ window.__ModuleLoader__.load({
         return h("p", {
           key: `${event.at}-${index}`,
           style: styles.meta,
-        }, `[${when}] ${event.kind}: ${event.detail}`);
+        }, `[${when}] ${eventLabel(event.kind)}: ${event.detail}`);
       });
 
       return h("section", { style: styles.section },
-        h("p", { style: styles.intro }, `Skill 管理 · ${view.meta.skillsRoot || ""}`),
+        h("p", { style: styles.intro }, t("intro")),
+        h("p", { style: styles.meta }, `${t("skillsRoot")}: ${view.meta.skillsRoot || ""}`),
         h("label", { style: styles.row },
-          "项目 workspace cwd",
+          t("workspaceLabel"),
           h("input", {
             type: "text",
-            placeholder: "留空 = 用户级 skill;填写后显示项目 .dsh/skills、.agents/skills",
+            placeholder: t("workspacePlaceholder"),
             value: cwd,
             onChange: (event) => {
               setCwd(event.target.value);
@@ -321,10 +450,10 @@ window.__ModuleLoader__.load({
             checked: config.enabled !== false,
             onChange: (event) => changeConfig("enabled", event.target.checked),
           }),
-          "启用主动使用",
-          h("span", { style: styles.hint }, "关闭后仅保留手动调用。")),
+          t("enabled"),
+          h("span", { style: styles.hint }, t("enabledHint"))),
         h("label", { style: styles.row },
-          "每轮最多自动加载",
+          t("maxAuto"),
           h("input", {
             type: "number",
             min: 0,
@@ -333,34 +462,35 @@ window.__ModuleLoader__.load({
             value: String(config.maxAuto ?? 2),
             onChange: (event) => changeConfig("maxAuto", Number(event.target.value)),
             style: { ...styles.input, maxWidth: 90 },
-          })),
+          }),
+          h("span", { style: styles.hint }, t("maxAutoHint"))),
         h("div", { style: styles.row },
           h("button", {
             type: "button",
             disabled: busy !== null || !hasGit,
             onClick: () => run("update", "update"),
             style: styles.button,
-          }, busy === "update" ? "正在同步…" : "从 GitHub 更新"),
+          }, busy === "update" ? t("updating") : t("update")),
           h("button", {
             type: "button",
             disabled: busy !== null,
             onClick: () => run("refresh", "refresh"),
             style: styles.button,
-          }, "刷新"),
-          !hasGit && h("span", { style: styles.hint }, "未检测到 git。")),
+          }, busy === "refresh" ? t("refreshing") : t("refresh")),
+          !hasGit && h("span", { style: styles.hint }, t("gitUnavailable"))),
         h("div", { style: styles.card },
-          h("div", { style: { fontWeight: 600, marginBottom: 6 } }, "从 Git 仓库安装 plugin / skills"),
+          h("div", { style: { fontWeight: 600, marginBottom: 6 } }, t("installTitle")),
           h("div", { style: styles.row },
             h("input", {
               type: "text",
-              placeholder: "owner/repo 或 https://github.com/owner/repo.git",
+              placeholder: t("urlPlaceholder"),
               value: url,
               onChange: (event) => setUrl(event.target.value),
               style: { ...styles.input, flex: 1 },
             }),
             h("input", {
               type: "text",
-              placeholder: "分支/标签(可选)",
+              placeholder: t("refPlaceholder"),
               value: ref,
               onChange: (event) => setRef(event.target.value),
               style: { ...styles.input, maxWidth: 160 },
@@ -376,21 +506,21 @@ window.__ModuleLoader__.load({
                 run("install", "install", { url: target, ref: branch });
               },
               style: styles.button,
-            }, "安装并发现")),
-          h("p", { style: styles.hint }, "识别 Codex/Claude plugin manifest、skills 与仓库内 node lifecycle hooks；其他命令 hook 不执行。")),
+            }, busy === "install" ? t("installing") : t("installBtn"))),
+          h("p", { style: styles.hint }, t("installHint"))),
         notice !== null && h("pre", {
           style: { ...styles.notice, ...(noticeOk ? styles.noticeOk : styles.noticeError) },
         }, notice),
         h("div", { style: { marginTop: 14 } },
-          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, `已管理插件 / Git 来源 (${plugins.length})`),
-          plugins.length === 0 && h("p", { style: styles.hint }, "尚未通过 manager 安装插件来源。"),
+          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, `${t("managedSources")} (${plugins.length})`),
+          plugins.length === 0 && h("p", { style: styles.hint }, t("noSources")),
           pluginCards),
-        skills.length === 0 && h("p", { style: styles.hint }, "未发现 skill。"),
+        skills.length === 0 && h("p", { style: styles.hint }, t("noSkills")),
         otherSkills.length > 0 && h("div", { style: { marginTop: 14 } },
-          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, `本地 / 项目 skills (${otherSkills.length})`),
+          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, `${t("localProjectSkills")} (${otherSkills.length})`),
           otherSkills.map((skill) => skillCard(skill))),
         events.length > 0 && h("div", { style: { marginTop: 12 } },
-          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, "最近记录"),
+          h("div", { style: { fontWeight: 600, marginBottom: 4 } }, t("recentLabel")),
           eventItems));
     }
 
@@ -398,7 +528,7 @@ window.__ModuleLoader__.load({
     const inject = ["slots", "connection", "locale"];
 
     function apply(ctx) {
-      const t = ctx.locale ? ctx.locale.bind("skillManager") : (key) => DICT.zh[key] ?? key;
+      const t = ctx.locale ? ctx.locale.bind("skillManager") : (key) => DICT.en[key] ?? key;
       ctx.effect(() => {
         const dispose = ctx.locale.register("skillManager", DICT);
         return () => void dispose();
@@ -412,6 +542,7 @@ window.__ModuleLoader__.load({
         id: "skill-manager",
         order: 45,
         label: () => t("nav"),
+        locale: "skillManager",
         inject: () => ({ connection }),
       }, ManagerSection));
     }

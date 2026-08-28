@@ -256,6 +256,7 @@ Filesystem Provider 按以下优先级解析 Skill 根目录：
 
 Settings → **Skill 管理** 提供：
 
+- 跟随 DSH 当前显示语言切换的英文与简体中文界面；
 - 主动激活总开关；
 - 每轮自动加载数量限制；
 - GitHub 安装与更新操作；

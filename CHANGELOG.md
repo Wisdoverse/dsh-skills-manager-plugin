@@ -6,9 +6,12 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## 1.0.1 - 2026-08-29
+
 ### Added
 
 - Token-free npm Trusted Publishing from version-matched GitHub tags, with release gates and automatic provenance.
+- English and Simplified Chinese localization for all static Settings UI copy, following the active DSH display language.
 
 ## 1.0.0 - 2026-08-29
 

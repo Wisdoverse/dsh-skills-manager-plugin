@@ -32,6 +32,9 @@ test("package declares an installable DSH bundle", async () => {
   assert.match(patch, /^- insert:\s*$/m);
   assert.match(patch, /^\s+- id: skill-manager\s*$/m);
   assert.match(patch, new RegExp(`^\\s+name:\\s+['\"]?${manifest.name}['\"]?\\s*$`, "m"));
+
+  const entry = await readFile(resolveInsideRoot(manifest.main), "utf8");
+  assert.ok(entry.includes(`version: "${manifest.version}"`), "Settings metadata must match the package version");
 });
 
 test("published files and exports stay inside the package root", async () => {
