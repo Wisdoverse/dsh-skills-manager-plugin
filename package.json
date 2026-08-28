@@ -1,5 +1,5 @@
 {
-  "name": "dsh-skills-manager",
+  "name": "@wisdoverse/dsh-skills-manager",
   "version": "1.0.0",
   "description": "Skill manager for DeepSeek Harness: proactive skill activation with trigger hooks, GitHub source sync, and a Settings management UI.",
   "keywords": [
@@ -25,7 +25,10 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "packageManager": "pnpm@11.19.0",
-  "private": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "main": "index.js",
   "exports": {

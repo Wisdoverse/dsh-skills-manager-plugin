@@ -17,7 +17,10 @@ function resolveInsideRoot(entry) {
 }
 
 test("package declares an installable DSH bundle", async () => {
-  assert.equal(manifest.name, "dsh-skills-manager");
+  assert.equal(manifest.name, "@wisdoverse/dsh-skills-manager");
+  assert.notEqual(manifest.private, true);
+  assert.equal(manifest.publishConfig?.access, "public");
+  assert.equal(manifest.publishConfig?.registry, "https://registry.npmjs.org/");
   assert.equal(manifest.type, "module");
   assert.equal(manifest.engines?.node, "^22.19.0 || >=24.0.0");
   assert.equal(manifest.packageManager, "pnpm@11.19.0");
@@ -28,7 +31,7 @@ test("package declares an installable DSH bundle", async () => {
   const patch = await readFile(resolveInsideRoot(manifest.dsh.bundle.patch), "utf8");
   assert.match(patch, /^- insert:\s*$/m);
   assert.match(patch, /^\s+- id: skill-manager\s*$/m);
-  assert.match(patch, new RegExp(`^\\s+name: ${manifest.name}\\s*$`, "m"));
+  assert.match(patch, new RegExp(`^\\s+name:\\s+['\"]?${manifest.name}['\"]?\\s*$`, "m"));
 });
 
 test("published files and exports stay inside the package root", async () => {

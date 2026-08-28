@@ -6,7 +6,7 @@
 
 **English** · [简体中文](./README.zh-CN.md)
 
-[![Version](https://img.shields.io/badge/version-1.0.0-2563eb.svg)](./package.json)
+[![npm version](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
 [![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-16a34a.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -89,19 +89,27 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm available on `PATH` for `dsh plugin`.
 
+### Install from npm (recommended)
+
+```sh
+dsh plugin --profile web add @wisdoverse/dsh-skills-manager
+```
+
+DSH recognizes the package's `dsh.bundle` manifest and adds `@wisdoverse/dsh-skills-manager` to the Web profile automatically. Restart a running Web profile after installation.
+
 ### Install from GitHub
 
 ```sh
 dsh plugin --profile web add github:Wisdoverse/dsh-skills-manager-plugin
 ```
 
-DSH recognizes the package's `dsh.bundle` manifest and adds `dsh-skills-manager` to the Web profile automatically. Restart a running Web profile after installation.
+Use the GitHub source when testing unreleased changes from `main`. Pin a commit when reproducibility matters.
 
 ### Update or remove
 
 ```sh
-dsh plugin --profile web update dsh-skills-manager
-dsh plugin --profile web remove dsh-skills-manager
+dsh plugin --profile web update @wisdoverse/dsh-skills-manager
+dsh plugin --profile web remove @wisdoverse/dsh-skills-manager
 ```
 
 Restart the profile after either operation so its composition matches the installed bundle set.

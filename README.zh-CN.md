@@ -6,7 +6,7 @@
 
 [English](./README.md) · **简体中文**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-2563eb.svg)](./package.json)
+[![npm version](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
 [![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-16a34a.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -89,19 +89,27 @@ flowchart LR
 - Node.js `^22.19.0 || >=24.0.0`；
 - `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
 
+### 从 npm 安装（推荐）
+
+```sh
+dsh plugin --profile web add @wisdoverse/dsh-skills-manager
+```
+
+DSH 会识别包内的 `dsh.bundle` manifest，并自动把 `@wisdoverse/dsh-skills-manager` 加入 Web Profile。安装完成后，请重启正在运行的 Web Profile。
+
 ### 从 GitHub 安装
 
 ```sh
 dsh plugin --profile web add github:Wisdoverse/dsh-skills-manager-plugin
 ```
 
-DSH 会识别包内的 `dsh.bundle` manifest，并自动把 `dsh-skills-manager` 加入 Web Profile。安装完成后，请重启正在运行的 Web Profile。
+需要测试 `main` 中尚未发布的变更时，可以使用 GitHub 来源；如需可复现安装，请固定到具体 commit。
 
 ### 更新或卸载
 
 ```sh
-dsh plugin --profile web update dsh-skills-manager
-dsh plugin --profile web remove dsh-skills-manager
+dsh plugin --profile web update @wisdoverse/dsh-skills-manager
+dsh plugin --profile web remove @wisdoverse/dsh-skills-manager
 ```
 
 执行任一操作后请重启 Profile，确保运行时 composition 与已安装 Bundle 一致。
