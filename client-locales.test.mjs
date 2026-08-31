@@ -31,6 +31,7 @@ function loadClientPlugin() {
     },
   });
   assert.ok(definition, "client module loader definition must be registered");
+  assert.equal(definition.id, "@wisdoverse/dsh-skills-manager");
   return definition.factory((name) => {
     assert.equal(name, "react");
     return {

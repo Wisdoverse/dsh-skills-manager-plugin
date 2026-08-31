@@ -12,6 +12,15 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 - Token-free npm Trusted Publishing from version-matched GitHub tags, with release gates and automatic provenance.
 - English and Simplified Chinese localization for all static Settings UI copy, following the active DSH display language.
+- A repository-owned marketplace screenshot captured from a real DSH Web profile.
+
+### Changed
+
+- Consume official DSH runtime packages as host-provided peer dependencies instead of bundling duplicate copies.
+
+### Fixed
+
+- Register the browser bundle under the scoped package name expected by the DSH client loader.
 
 ## 1.0.0 - 2026-08-29
 
