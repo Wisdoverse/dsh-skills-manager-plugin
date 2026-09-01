@@ -7,7 +7,7 @@ Thanks for helping improve `dsh-skills-manager`.
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm 11;
 - Git;
-- DeepSeek Harness `0.1.1-rc.2` for integration smoke tests.
+- DeepSeek Harness `0.1.1-rc.2` and `0.1.2-alpha.3` for integration smoke tests.
 
 ## Setup
 

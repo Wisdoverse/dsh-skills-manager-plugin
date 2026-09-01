@@ -168,7 +168,7 @@ export function apply(ctx) {
       state = parseStateText(await readFile(stateFile, "utf8"));
     } catch (error) {
       state = defaultState();
-      state.events = pushEvent(state, "state", `state read failed, using defaults: ${messageOf(error)}`);
+      pushEvent(state, "state", `state read failed, using defaults: ${messageOf(error)}`);
     }
     if (state === null) {
       state = defaultState();
@@ -508,7 +508,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.1",
+        version: "1.0.2",
         hasGit: git,
         home,
         skillsRoot,

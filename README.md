@@ -85,7 +85,7 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 
 ### Requirements
 
-- DeepSeek Harness `0.1.1-rc.2`;
+- DeepSeek Harness `0.1.1-rc.2` or `0.1.2-alpha.3`;
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm available on `PATH` for `dsh plugin`.
 
@@ -129,7 +129,7 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 
 | Component | Supported or continuously verified |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` dependency contract and isolated GitHub-install smoke test |
+| DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests |
 | Node.js | `22.19.0` and `24.19.0` |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |

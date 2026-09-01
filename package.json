@@ -1,6 +1,6 @@
 {
   "name": "@wisdoverse/dsh-skills-manager",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Skill manager for DeepSeek Harness: proactive skill activation with trigger hooks, GitHub source sync, and a Settings management UI.",
   "keywords": [
     "deepseek-harness",
@@ -50,17 +50,17 @@
     "LICENSE"
   ],
   "peerDependencies": {
-    "@deepseek-ai/dsh-home-paths": ">=0.1.1-rc.2 <0.2.0-0",
-    "@deepseek-ai/dsh-llm": ">=0.1.1-rc.2 <0.2.0-0",
-    "@deepseek-ai/dsh-skill": ">=0.1.1-rc.2 <0.2.0-0",
-    "@deepseek-ai/dsh-tools": ">=0.1.1-rc.2 <0.2.0-0"
+    "@deepseek-ai/dsh-home-paths": ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0",
+    "@deepseek-ai/dsh-llm": ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0",
+    "@deepseek-ai/dsh-skill": ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0",
+    "@deepseek-ai/dsh-tools": ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0"
   },
   "scripts": {
-    "test": "node --test test.mjs package-contract.test.mjs client-locales.test.mjs",
+    "test": "node --test test.mjs host.test.mjs package-contract.test.mjs client-locales.test.mjs",
     "test:unit": "node --test test.mjs",
     "test:package": "node --test package-contract.test.mjs",
     "test:client": "node --test client-locales.test.mjs",
-    "lint": "node --check index.js && node --check lib.js && node --check client/client.js && node --check test.mjs && node --check package-contract.test.mjs && node --check client-locales.test.mjs"
+    "lint": "node --check index.js && node --check lib.js && node --check client/client.js && node --check test.mjs && node --check host.test.mjs && node --check package-contract.test.mjs && node --check client-locales.test.mjs"
   },
   "dsh": {
     "bundle": {

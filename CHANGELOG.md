@@ -6,6 +6,16 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## 1.0.2 - 2026-09-01
+
+### Changed
+
+- Accept the DeepSeek Harness `0.1.2-alpha.3` host runtime while retaining `0.1.1-rc.2` compatibility.
+
+### Fixed
+
+- Keep the initial state event history as an array when a fresh DSH Home has no state file yet.
+
 ## 1.0.1 - 2026-08-29
 
 ### Added

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const manifest = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
+const dshPeerRange = ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0";
 
 function resolveInsideRoot(entry) {
   assert.equal(typeof entry, "string");
@@ -35,7 +36,7 @@ test("package declares an installable DSH bundle", async () => {
     "@deepseek-ai/dsh-tools",
   ]) {
     assert.equal(manifest.dependencies?.[dependency], undefined, `${dependency} must come from the DSH host`);
-    assert.equal(manifest.peerDependencies?.[dependency], ">=0.1.1-rc.2 <0.2.0-0");
+    assert.equal(manifest.peerDependencies?.[dependency], dshPeerRange);
   }
 
   const patch = await readFile(resolveInsideRoot(manifest.dsh.bundle.patch), "utf8");

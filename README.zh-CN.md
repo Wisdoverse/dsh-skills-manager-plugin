@@ -85,7 +85,7 @@ flowchart LR
 
 ### 环境要求
 
-- DeepSeek Harness `0.1.1-rc.2`；
+- DeepSeek Harness `0.1.1-rc.2` 或 `0.1.2-alpha.3`；
 - Node.js `^22.19.0 || >=24.0.0`；
 - `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
 
@@ -129,7 +129,7 @@ dsh plugin --profile web add .
 
 | 组件 | 支持或持续验证范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` 依赖合同与隔离 GitHub 安装烟测 |
+| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测 |
 | Node.js | `22.19.0` 与 `24.19.0` |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |
