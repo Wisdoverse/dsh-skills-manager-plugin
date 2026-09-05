@@ -85,7 +85,7 @@ flowchart LR
 
 ### 环境要求
 
-- DeepSeek Harness `0.1.1-rc.2` 或 `0.1.2-alpha.3`；
+- DeepSeek Harness `0.1.1-rc.2`、`0.1.2-alpha.3` 或 `0.1.3-alpha.1`；
 - Node.js `^22.19.0 || >=24.0.0`；
 - `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
 
@@ -129,10 +129,12 @@ dsh plugin --profile web add .
 
 | 组件 | 支持或持续验证范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测 |
+| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试 |
 | Node.js | `22.19.0` 与 `24.19.0` |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |
+
+`0.1.3-alpha.1` 适配支持 `session.snapshotEvents()` 和数组形式的可见消息序号，同时保留旧版 events API。该版本的完整安装/UI 烟测仍待对应宿主包在 npm 可用后验证。
 
 DSH 仍处于 developer preview。需要可复现安装时，请把插件固定到具体 commit；升级 DSH 依赖后应重新运行安装烟测。
 

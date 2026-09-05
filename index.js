@@ -415,7 +415,7 @@ export function apply(ctx) {
       for (const { name, hook } of entries) {
         if (seen.has(name) || !matchHookWhen(hook.when, text)) continue;
         seen.add(name);
-        if (sessionActiveOf(agent, name) || activationStateOf(agent?.session?.events ?? [], agent?.session?.surface?.nodes, name).active) continue;
+        if (sessionActiveOf(agent, name) || activationStateOf(sessionEvents(agent?.session), agent?.session?.surface?.nodes, name).active) continue;
         const skill = await ctx.skills.get(name, { cwd: agent?.session?.header?.cwd, signal: exec.signal });
         if (skill === undefined || !isModelInvocable(skill)) continue;
         markSessionActive(agent, name);
@@ -508,7 +508,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.2",
+        version: "1.0.3-alpha.1",
         hasGit: git,
         home,
         skillsRoot,
@@ -841,7 +841,7 @@ export function apply(ctx) {
       const ranked = rankSkills(enriched, text, current, lookup.cwd);
       const { auto, suggest } = selectActivations(ranked, current.config);
 
-      const events = agent.session?.events ?? [];
+      const events = sessionEvents(agent.session);
       const nodes = agent.session?.surface?.nodes;
       const sessionActive = sessionActiveSet(agent);
       const committed = new Set(activeSkillNames(events));
@@ -1085,6 +1085,11 @@ function applyRecordScope(entry, args) {
     entry.scope = undefined;
     entry.cwd = undefined;
   }
+}
+
+/** DSH 0.1.3 exposes immutable snapshots; older hosts expose events directly. */
+function sessionEvents(session) {
+  return session?.snapshotEvents?.() ?? session?.events ?? [];
 }
 
 /** Text of the direct user messages in a claimed step batch. */

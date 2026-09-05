@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const manifest = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
-const dshPeerRange = ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0";
+const dshPeerRange = ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0 || >=0.1.3-alpha.1 <0.2.0-0";
 
 function resolveInsideRoot(entry) {
   assert.equal(typeof entry, "string");
@@ -28,6 +28,12 @@ test("package declares an installable DSH bundle", async () => {
   assert.equal(manifest.repository?.url, "git+https://github.com/Wisdoverse/dsh-skills-manager-plugin.git");
   assert.ok(manifest.keywords.includes("dsh-plugin"));
   assert.equal(manifest.dsh?.bundle?.patch, "./cordis.patch.yml");
+  assert.deepEqual(manifest.dsh?.client?.inject, [
+    "@deepseek-ai/dsh-client-connection",
+    "@deepseek-ai/dsh-client-ui-slots",
+    "@deepseek-ai/dsh-client-ui-settings",
+    "@deepseek-ai/dsh-client-locale",
+  ]);
 
   for (const dependency of [
     "@deepseek-ai/dsh-home-paths",

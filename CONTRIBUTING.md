@@ -65,7 +65,7 @@ npm releases use Trusted Publishing with GitHub Actions and do not require an `N
 
 1. Create a tag named exactly `v<package.json version>` from the release commit.
 2. Push the tag to GitHub, or create a GitHub Release with that new tag.
-3. Confirm the `Publish to npm` workflow passes and the npm `latest` tag points to the new version.
+3. Confirm the `Publish to npm` workflow passes and the npm `latest` tag points to the new stable version, or `next` points to the new prerelease.
 
 The workflow rejects a Git tag that does not match `package.json`, reruns the repository gates, publishes through npm OIDC, and receives automatic provenance from npm. Published npm versions are immutable, so never reuse a version number.
 
