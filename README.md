@@ -85,7 +85,7 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 
 ### Requirements
 
-- DeepSeek Harness `0.1.1-rc.2` or `0.1.2-alpha.3`;
+- DeepSeek Harness `0.1.1-rc.2`, `0.1.2-alpha.3`, or `0.1.3-alpha.1`;
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm available on `PATH` for `dsh plugin`.
 
@@ -129,10 +129,12 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 
 | Component | Supported or continuously verified |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests |
+| DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests; `0.1.3-alpha.1` tagged-source API review and session-hook regression tests |
 | Node.js | `22.19.0` and `24.19.0` |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |
+
+The `0.1.3-alpha.1` adaptation supports `session.snapshotEvents()` and array-based surface nodes while retaining the legacy events API. Full install/UI smoke testing for that release is pending availability of its host packages on npm.
 
 DSH is in developer preview. Pin the plugin to a commit when reproducibility matters, and re-run the install smoke test when upgrading DSH dependencies.
 

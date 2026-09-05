@@ -60,4 +60,10 @@ jobs:
         run: npm pack --dry-run
 
       - name: Publish with npm Trusted Publishing
-        run: npm publish --access public
+        shell: bash
+        run: |
+          package_version="$(node --print "require('./package.json').version")"
+          case "$package_version" in
+            *-*) npm publish --access public --tag next ;;
+            *) npm publish --access public --tag latest ;;
+          esac

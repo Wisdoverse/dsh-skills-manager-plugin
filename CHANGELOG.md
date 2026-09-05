@@ -6,6 +6,18 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## 1.0.3-alpha.1 - 2026-09-05
+
+### Changed
+
+- Accept the DeepSeek Harness `0.1.3-alpha.1` prerelease in host peer dependencies.
+
+### Fixed
+
+- Depend on the client slots provider instead of the removed `dsh-client-runtime` package.
+- Read session history through `snapshotEvents()` on DSH `0.1.3-alpha.1`, retaining the legacy `events` fallback.
+- Recognize array-based visible surface nodes so resumed skills stay active and compacted activations can be injected again.
+
 ## 1.0.2 - 2026-09-01
 
 ### Changed

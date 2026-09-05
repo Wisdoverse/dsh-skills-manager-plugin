@@ -275,14 +275,14 @@ export function selectActivations(ranked, config) {
 /**
  * Scan one session's events plus the visible surface nodes for a skill's
  * latest activation marker.
- * @param events - `agent.session.events`.
- * @param surfaceNodes - `agent.session.surface.nodes` (seq set).
+ * @param events - session event snapshot.
+ * @param surfaceNodes - `agent.session.surface.nodes` (seq array or legacy set).
  * @param name - skill name.
  * @returns `{ active: boolean, turn?: number }` — active while its marker
  *   remains in the visible surface.
  */
 export function activationStateOf(events, surfaceNodes, name) {
-  const visible = surfaceNodes && typeof surfaceNodes.has === "function" ? surfaceNodes : new Set();
+  const visible = new Set(surfaceNodes ?? []);
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index];
     if (event.type !== "user/message") continue;
