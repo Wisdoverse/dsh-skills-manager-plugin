@@ -1,6 +1,6 @@
 {
   "name": "@wisdoverse/dsh-skills-manager",
-  "version": "1.0.3-alpha.1",
+  "version": "1.0.3",
   "description": "Skill manager for DeepSeek Harness: proactive skill activation with trigger hooks, GitHub source sync, and a Settings management UI.",
   "keywords": [
     "deepseek-harness",

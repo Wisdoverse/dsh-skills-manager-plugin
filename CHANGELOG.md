@@ -6,6 +6,12 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## 1.0.3 - 2026-09-07
+
+### Changed
+
+- Promote the DSH 0.1.3 compatibility changes from `1.0.3-alpha.1` to the stable release; runtime behavior is unchanged.
+
 ## 1.0.3-alpha.1 - 2026-09-05
 
 ### Changed
