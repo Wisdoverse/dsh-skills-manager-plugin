@@ -8,7 +8,7 @@ window.__ModuleLoader__.load({
     const React = require("react");
     const { createElement: h, useCallback, useEffect, useRef, useState } = React;
 
-    const CHANNEL = "/skill-manager";
+    const SETTINGS_ROUTE = "/api/skill-manager";
     const MODES = ["auto", "suggest", "off"];
     const MODE_KEYS = { auto: "modeAuto", suggest: "modeSuggest", off: "modeOff" };
     const SOURCE_KEYS = {
@@ -285,10 +285,17 @@ window.__ModuleLoader__.load({
       };
 
       const call = useCallback(async (endpoint, payload, signal) => {
-        const result = await connection.rpc.call(CHANNEL, endpoint, payload ?? {}, signal);
+        const response = await fetch(SETTINGS_ROUTE, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ endpoint, payload: payload ?? {} }),
+          signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
         if (!result.ok) throw new Error((result.error && result.error.message) || t("rpcFailed"));
         return result.value;
-      }, [connection, t]);
+      }, [t]);
 
       const scopeOf = (skill) =>
         skill.source === "project-dsh" || skill.source === "project-agents" ? "project" : "user";

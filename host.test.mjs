@@ -47,7 +47,12 @@ for (const api of ["events", "snapshotEvents"]) {
       );
       // A resumed session has a persisted activation but no manager memory.
       events.push({ type: "user/message", seq: 0, data: {
-        source: { kind: "skill-manager", form: "activation", name: skill.name },
+        source: {
+          kind: "plugin",
+          plugin: "dsh-skills-manager",
+          form: "notice",
+          summary: JSON.stringify({ form: "activation", name: skill.name }),
+        },
       } });
       session.surface.nodes = [0];
       assert.equal((await step()).messages.length, 1);
@@ -61,7 +66,11 @@ for (const api of ["events", "snapshotEvents"]) {
       session.surface.nodes = [];
       const activated = await step();
       assert.equal(activated.messages.length, 2);
-      assert.equal(activated.messages[1].source.name, skill.name);
+      assert.deepEqual(
+        { kind: activated.messages[1].source.kind, plugin: activated.messages[1].source.plugin, form: activated.messages[1].source.form },
+        { kind: "plugin", plugin: "dsh-skills-manager", form: "notice" },
+      );
+      assert.equal(JSON.parse(activated.messages[1].source.summary).name, skill.name);
       events.push({ type: "user/message", seq: 1, data: activated.messages[1] });
       session.surface.nodes = [1];
       assert.equal((await step()).messages.length, 1);
@@ -82,7 +91,7 @@ test("a fresh DSH home returns a valid Settings view", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
   const previousHome = process.env.DSH_HOME;
   process.env.DSH_HOME = home;
-  let rpcHandler;
+  let route;
 
   try {
     apply({
@@ -94,13 +103,14 @@ test("a fresh DSH home returns a valid Settings view", async () => {
         get: async () => undefined,
       },
       tools: { register() {} },
-      inject(_seats, setup) {
+      inject(seats, setup) {
+        assert.deepEqual(seats, ["connection", "agentPresets"]);
         setup({
           agentPresets: { standingKeyFor: async () => undefined },
           connection: {
-            rpc: {
-              handle(_channel, handler) {
-                rpcHandler = handler;
+            fetch: {
+              register(value) {
+                route = value;
                 return () => {};
               },
             },
@@ -110,11 +120,18 @@ test("a fresh DSH home returns a valid Settings view", async () => {
       },
     });
 
-    assert.equal(typeof rpcHandler, "function");
-    const response = await rpcHandler("list", {});
-    assert.equal(response.ok, true);
-    assert.equal(Array.isArray(response.value.events), true);
-    assert.equal(response.value.events[0]?.kind, "state");
+    assert.equal(route.path, "/api/skill-manager");
+    assert.deepEqual(route.methods, ["POST"]);
+    assert.equal((await route.fetch(new Request("http://localhost/api/skill-manager", { method: "POST" }))).status, 415);
+    const response = await route.fetch(new Request("http://localhost/api/skill-manager", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: "list", payload: {} }),
+    }));
+    const result = await response.json();
+    assert.equal(result.ok, true);
+    assert.equal(Array.isArray(result.value.events), true);
+    assert.equal(result.value.events[0]?.kind, "state");
   } finally {
     if (previousHome === undefined) delete process.env.DSH_HOME;
     else process.env.DSH_HOME = previousHome;

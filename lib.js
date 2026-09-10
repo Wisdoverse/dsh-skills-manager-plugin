@@ -286,17 +286,30 @@ export function activationStateOf(events, surfaceNodes, name) {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index];
     if (event.type !== "user/message") continue;
-    const source = event.data && event.data.source;
-    if (!source || source.kind !== "skill-manager" || source.form !== "activation") continue;
+    const source = managerSourceData(event.data && event.data.source);
+    if (!source || source.form !== "activation") continue;
     if (source.name !== name) continue;
     return { active: visible.has(event.seq), turn: typeof source.turn === "number" ? source.turn : undefined };
   }
   return { active: false };
 }
 
+function managerSourceData(source) {
+  if (!source) return null;
+  if (source.kind === "skill-manager") return source;
+  if (source.kind !== "plugin" || source.plugin !== "dsh-skills-manager") return null;
+  if (source.form !== "notice" || typeof source.summary !== "string") return {};
+  try {
+    const data = JSON.parse(source.summary);
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Whether any message in the claimed batch was injected by this manager. */
 export function batchHasInjection(messages) {
-  return messages.some((message) => message.source && message.source.kind === "skill-manager");
+  return messages.some((message) => managerSourceData(message.source) !== null);
 }
 
 /** Render the activation reminder shell around canonical skill content. */
@@ -797,8 +810,8 @@ export function activeSkillNames(events) {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index];
     if (event.type !== "user/message") continue;
-    const source = event.data && event.data.source;
-    if (!source || source.kind !== "skill-manager") continue;
+    const source = managerSourceData(event.data && event.data.source);
+    if (!source) continue;
     const candidate = source.form === "activation" ? source.name : undefined;
     if (typeof candidate === "string" && !seen.has(candidate)) {
       seen.add(candidate);

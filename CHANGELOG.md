@@ -4,7 +4,12 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.0.4 - 2026-09-10
+
+### Fixed
+
+- Serve Settings through DSH's authenticated `/api` Fetch registry, avoiding the broken third-party RPC channel registration in current DSH releases.
+- Emit canonical DSH plugin notices while continuing to recognize legacy `skill-manager` message sources.
 
 ## 1.0.3 - 2026-09-07
 

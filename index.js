@@ -80,7 +80,7 @@ import {
 export const name = "dsh-skills-manager";
 export const inject = ["skills", "tools"];
 
-const CHANNEL = "/skill-manager";
+const SETTINGS_ROUTE = "/api/skill-manager";
 const GIT_TIMEOUT_MS = 180_000;
 const MAX_LOG_BYTES = 4 * 1024 * 1024;
 const MAX_HOOK_BYTES = 256 * 1024;
@@ -99,6 +99,9 @@ function failure(message, code = "internal") {
 
 function messageOf(error) {
   return error instanceof Error ? error.message : String(error);
+}
+function managerSource(data) {
+  return { kind: "plugin", plugin: "dsh-skills-manager", form: "notice", summary: JSON.stringify(data) };
 }
 
 function runGit(cwd, args, signal) {
@@ -307,14 +310,13 @@ export function apply(ctx) {
             if (!context) continue;
             injections.push(createUserMessage({
               content: [{ type: "text", text: `[plugin hook · ${source.plugin.name}]\n${context}` }],
-              source: {
-                kind: "skill-manager",
+              source: managerSource({
                 form: "plugin-hook",
                 name: source.plugin.name,
                 event,
                 turn,
                 step,
-              },
+              }),
             }));
           } catch (error) {
             ctx.logger.warn(`plugin hook ${source.plugin.name}/${event} skipped: ${messageOf(error)}`);
@@ -425,12 +427,11 @@ export function apply(ctx) {
             type: "text",
             text: `${renderActivationReminder([{ skill: { name }, reasons: [`PostToolUse:${exec.name}`] }])}\n\n${renderSkillContent(skill)}`,
           }],
-          source: {
-            kind: "skill-manager",
+          source: managerSource({
             form: "hook-activate",
             name,
             tool: exec.name,
-          },
+          }),
         }));
       }
       if (contexts.length === 0) return decision;
@@ -508,7 +509,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.3",
+        version: "1.0.4",
         hasGit: git,
         home,
         skillsRoot,
@@ -866,14 +867,13 @@ export function apply(ctx) {
               type: "text",
               text: `${renderActivationReminder([{ skill: { name }, reasons: ["SessionStart"] }])}\n\n${renderSkillContent(skill)}`,
             }],
-            source: {
-              kind: "skill-manager",
+            source: managerSource({
               form: "activation",
               name,
               turn,
               step,
               reason: "SessionStart",
-            },
+            }),
           }));
         }
       }
@@ -889,26 +889,24 @@ export function apply(ctx) {
             type: "text",
             text: `${renderActivationReminder([entry])}\n\n${renderSkillContent(skill)}`,
           }],
-          source: {
-            kind: "skill-manager",
+          source: managerSource({
             form: "activation",
             name: entry.skill.name,
             turn,
             step,
-          },
+          }),
         }));
       }
       const suggestions = suggest.filter((entry) => !inContext(entry.skill.name));
       if (suggestions.length > 0) {
         injections.push(createUserMessage({
           content: [{ type: "text", text: renderSuggestionNotice(suggestions) }],
-          source: {
-            kind: "skill-manager",
+          source: managerSource({
             form: "suggestion",
             names: suggestions.map((entry) => entry.skill.name),
             turn,
             step,
-          },
+          }),
         }));
       }
 
@@ -923,13 +921,12 @@ export function apply(ctx) {
           if (injected >= 3) break;
           injections.push(createUserMessage({
             content: [{ type: "text", text: `[skill hook · ${item.name}]\n${item.hooks.inject}` }],
-            source: {
-              kind: "skill-manager",
+            source: managerSource({
               form: "hook-inject",
               name: item.name,
               turn,
               step,
-            },
+            }),
           }));
           emitHook("UserPromptSubmit", item.name, "inject");
           injected += 1;
@@ -1004,7 +1001,7 @@ export function apply(ctx) {
     },
   }));
 
-  // ---- Settings RPC -------------------------------------------------------
+  // ---- Settings API -------------------------------------------------------
   ctx.inject(["connection", "agentPresets"], (connectionCtx) => {
     async function settingsView(payload) {
       const cwd = typeof payload?.cwd === "string" ? payload.cwd : undefined;
@@ -1012,43 +1009,56 @@ export function apply(ctx) {
       const scope = cwd === undefined ? undefined : await connectionCtx.agentPresets.standingKeyFor();
       return managerView(cwd, scope);
     }
-    connectionCtx.effect(() => {
-      const dispose = connectionCtx.connection.rpc.handle(
-        CHANNEL,
-      async (endpoint, payload, signal) => {
-        try {
-          switch (endpoint) {
-            case "list":
+    async function handleSettings(endpoint, payload, signal) {
+      try {
+        switch (endpoint) {
+          case "list":
               return success(await settingsView(payload));
-            case "set-mode":
+          case "set-mode":
               return success((await runAction({ action: "set-mode", name: payload?.name, mode: payload?.mode, scope: payload?.scope, cwd: payload?.cwd }, signal)).message);
-            case "set-triggers":
+          case "set-triggers":
               return success((await runAction({ action: "set-triggers", name: payload?.name, triggers: payload?.triggers, scope: payload?.scope, cwd: payload?.cwd }, signal)).message);
-            case "set-hooks":
+          case "set-hooks":
               return success((await runAction({ action: "set-hooks", name: payload?.name, hooks: payload?.hooks, scope: payload?.scope, cwd: payload?.cwd }, signal)).message);
-            case "set-config":
+          case "set-config":
               return success((await runAction({ action: "set-config", config: payload?.config }, signal)).message);
-            case "install":
+          case "install":
               return success((await runAction({ action: "install", url: payload?.url, ref: payload?.ref }, signal)).message);
-            case "update":
+          case "update":
               return success((await runAction({ action: "update" }, signal)).message);
-            case "uninstall":
+          case "uninstall":
               return success((await runAction({ action: "uninstall", name: payload?.name }, signal)).message);
-            case "refresh":
+          case "refresh":
               return success(await settingsView(payload));
-            default:
-              return failure(`unknown endpoint "${endpoint}"`, "not-found");
-          }
-        } catch (error) {
-          return failure(messageOf(error));
+          default:
+            return failure(`unknown endpoint "${endpoint}"`, "not-found");
         }
-      },
-      { authority: "trusted-host" },
-    );
-      return () => {
-        void dispose();
-      };
-    }, "skill-manager: rpc");
+      } catch (error) {
+        return failure(messageOf(error));
+      }
+    }
+    connectionCtx.effect(() => {
+      const dispose = connectionCtx.connection.fetch.register({
+        path: SETTINGS_ROUTE,
+        methods: ["POST"],
+        requestBody: "buffered",
+        async fetch(request) {
+          const mediaType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+          if (mediaType !== "application/json") return new Response("content type must be application/json", { status: 415 });
+          let body;
+          try {
+            body = await request.json();
+          } catch {
+            return new Response("body is not JSON", { status: 400 });
+          }
+          if (body === null || typeof body !== "object" || typeof body.endpoint !== "string") {
+            return new Response("invalid request", { status: 400 });
+          }
+          return Response.json(await handleSettings(body.endpoint, body.payload, request.signal));
+        },
+      });
+      return () => { void dispose(); };
+    }, "skill-manager: settings api");
   });
 
   // Kick the state file into existence at boot so the UI never races it.

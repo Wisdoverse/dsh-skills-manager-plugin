@@ -61,6 +61,9 @@ const skill = (overrides = {}) => ({
   metadata: { triggers: ["over-engineering", "what can we delete"], activation: "auto" },
   ...overrides,
 });
+const managerSource = (data) => ({
+  kind: "plugin", plugin: "dsh-skills-manager", form: "notice", summary: JSON.stringify(data),
+});
 
 test("tokenize extracts latin words and CJK bigrams", () => {
   const tokens = tokenize("review this MR for over-engineering 管理界面");
@@ -135,8 +138,8 @@ test("toolCallText and resultText build searchable text", () => {
 
 test("activeSkillNames collects activation markers from events", () => {
   const events = [
-    { type: "user/message", seq: 1, data: { source: { kind: "skill-manager", form: "activation", name: "ponytail", turn: 1 } } },
-    { type: "user/message", seq: 2, data: { source: { kind: "skill-manager", form: "suggestion", names: ["ci-status"] } } },
+    { type: "user/message", seq: 1, data: { source: managerSource({ form: "activation", name: "ponytail", turn: 1 }) } },
+    { type: "user/message", seq: 2, data: { source: managerSource({ form: "suggestion", names: ["ci-status"] }) } },
     { type: "user/message", seq: 3, data: { source: { kind: "skill-manager", form: "activation", name: "ponytail", turn: 2 } } },
   ];
   assert.deepEqual(activeSkillNames(events), ["ponytail"]);
@@ -260,8 +263,8 @@ test("off mode never activates", () => {
 
 test("activationStateOf respects surface visibility", () => {
   const events = [
-    { type: "user/message", seq: 5, data: { source: { kind: "skill-manager", form: "activation", name: "ponytail-review", turn: 2 } } },
-    { type: "user/message", seq: 9, data: { source: { kind: "skill-manager", form: "activation", name: "ponytail-review", turn: 3 } } },
+    { type: "user/message", seq: 5, data: { source: managerSource({ form: "activation", name: "ponytail-review", turn: 2 }) } },
+    { type: "user/message", seq: 9, data: { source: managerSource({ form: "activation", name: "ponytail-review", turn: 3 }) } },
     { type: "user/message", seq: 12, data: { source: { kind: "skill-manager", form: "suggestion", names: ["ponytail-review"], turn: 4 } } },
   ];
   assert.deepEqual(activationStateOf(events, new Set([9]), "ponytail-review"), { active: true, turn: 3 });
@@ -270,7 +273,9 @@ test("activationStateOf respects surface visibility", () => {
 });
 
 test("batchHasInjection only matches manager messages", () => {
-  assert.equal(batchHasInjection([{ source: { kind: "user" } }, { source: { kind: "skill-manager" } }]), true);
+  assert.equal(batchHasInjection([{ source: { kind: "user" } }, { source: managerSource({ form: "suggestion" }) }]), true);
+  assert.equal(batchHasInjection([{ source: { kind: "skill-manager" } }]), true, "legacy sessions stay readable");
+  assert.equal(batchHasInjection([{ source: { kind: "plugin", plugin: "other", form: "notice", summary: "x" } }]), false);
   assert.equal(batchHasInjection([{ source: { kind: "user" } }]), false);
   assert.equal(batchHasInjection([{}]), false);
 });
