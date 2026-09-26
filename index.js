@@ -362,22 +362,22 @@ export function apply(ctx) {
   }
 
   // Hook: SessionStart — queue skills whose SessionStart hook asks to activate.
-  ctx.on("agent/session-start", ({ agent }) => {
-    void (async () => {
-      try {
-        const index = await hookIndexFor(agent.session?.header?.cwd, agent);
-        if (index.sessionStart.length === 0) return;
-        let set = sessionStarts.get(agent.session);
-        if (set === undefined) {
-          set = new Set();
-          sessionStarts.set(agent.session, set);
-        }
-        for (const item of index.sessionStart) set.add(item.name);
-      } catch (error) {
-        ctx.logger.warn(`skill-manager SessionStart hook skipped: ${messageOf(error)}`);
+  async function queueSessionStart({ agent }) {
+    try {
+      const index = await hookIndexFor(agent.session?.header?.cwd, agent);
+      if (index.sessionStart.length === 0) return;
+      let set = sessionStarts.get(agent.session);
+      if (set === undefined) {
+        set = new Set();
+        sessionStarts.set(agent.session, set);
       }
-    })();
-  });
+      for (const item of index.sessionStart) set.add(item.name);
+    } catch (error) {
+      ctx.logger.warn(`skill-manager SessionStart hook skipped: ${messageOf(error)}`);
+    }
+  }
+  ctx.on("agent/created", queueSessionStart);
+  ctx.on("agent/session-start", queueSessionStart);
 
   // Hook: PreToolUse — skills may allow/deny/ask for tool dispatch.
   ctx.on("tools/pre-execute", async (exec, next) => {
