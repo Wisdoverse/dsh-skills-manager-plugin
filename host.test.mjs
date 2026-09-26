@@ -6,6 +6,44 @@ import { join } from "node:path";
 
 import { apply } from "./index.js";
 
+for (const lifecycleEvent of ["agent/created", "agent/session-start"]) {
+  test(`${lifecycleEvent}: SessionStart skill activates before the first step`, async () => {
+    const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
+    const previousHome = process.env.DSH_HOME;
+    process.env.DSH_HOME = home;
+    const handlers = new Map();
+    const warnings = [];
+    const skill = {
+      name: "startup-guide", description: "Startup guide", content: "Read this first.",
+      provider: "filesystem", source: "user-dsh", invocation: { modelInvocable: true, userInvocable: true },
+      metadata: { hooks: { SessionStart: { activate: true } } },
+    };
+    const agent = { session: { header: { cwd: home }, surface: { nodes: [] }, snapshotEvents: () => [] } };
+    const prompt = { source: { kind: "user" }, content: [{ type: "text", text: "hello" }] };
+    try {
+      apply({
+        on(name, handler) { handlers.set(name, handler); },
+        events: { dispatch() {} },
+        logger: { warn(message) { warnings.push(message); } },
+        skills: { snapshot: async () => ({ complete: true, skills: [skill] }), get: async () => skill },
+        tools: { register() {} },
+        inject() {},
+      });
+      await handlers.get(lifecycleEvent)({ agent, source: "startup" });
+      const decision = await handlers.get("agent/pre-step")(
+        { agent, messages: [prompt], turn: 1, step: 1, signal: new AbortController().signal },
+        async () => ({ kind: "enter", messages: [prompt] }),
+      );
+      assert.equal(decision.messages.length, 2, warnings.join("; "));
+      assert.match(decision.messages[1].content[0].text, /Read this first/);
+    } finally {
+      if (previousHome === undefined) delete process.env.DSH_HOME;
+      else process.env.DSH_HOME = previousHome;
+      await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
+    }
+  });
+}
+
 for (const api of ["events", "snapshotEvents"]) {
   test(`${api}: activation survives resume and reinjects after compaction`, async () => {
     const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
