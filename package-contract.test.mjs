@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const manifest = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
-const dshPeerRange = ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0 || >=0.1.3-alpha.1 <0.2.0-0";
+const dshPeerRange = ">=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.3 <0.2.0-0 || >=0.1.3-alpha.1 <0.2.0-0 || 0.2.0-rc.2";
 
 function resolveInsideRoot(entry) {
   assert.equal(typeof entry, "string");
