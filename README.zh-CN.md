@@ -129,7 +129,7 @@ dsh plugin --profile web add .
 
 | 组件 | 支持或持续验证范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试 |
+| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试；`0.2.0-rc.2` 隔离安装、Web 启动和 Settings API 烟测 |
 | Node.js | `22.19.0` 与 `24.19.0` |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |

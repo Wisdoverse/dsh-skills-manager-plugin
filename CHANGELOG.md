@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.5 - 2026-09-30
+
+### Changed
+
+- Accept the tested DSH `0.2.0-rc.2` runtime while retaining the existing `0.1.x` host range.
+
 ## 1.0.4 - 2026-09-10
 
 ### Fixed

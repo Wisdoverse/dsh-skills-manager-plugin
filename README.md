@@ -129,7 +129,7 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 
 | Component | Supported or continuously verified |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests; `0.1.3-alpha.1` tagged-source API review and session-hook regression tests |
+| DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests; `0.1.3-alpha.1` tagged-source API review and session-hook regression tests; `0.2.0-rc.2` isolated install, Web boot, and Settings API smoke tests |
 | Node.js | `22.19.0` and `24.19.0` |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |
