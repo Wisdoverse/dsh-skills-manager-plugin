@@ -62,7 +62,7 @@ const skill = (overrides = {}) => ({
   ...overrides,
 });
 const managerSource = (data) => ({
-  kind: "plugin", plugin: "dsh-skills-manager", form: "notice", summary: JSON.stringify(data),
+  kind: "plugin:dsh-skills-manager", form: "notice", summary: JSON.stringify(data),
 });
 
 test("tokenize extracts latin words and CJK bigrams", () => {
@@ -141,6 +141,7 @@ test("activeSkillNames collects activation markers from events", () => {
     { type: "user/message", seq: 1, data: { source: managerSource({ form: "activation", name: "ponytail", turn: 1 }) } },
     { type: "user/message", seq: 2, data: { source: managerSource({ form: "suggestion", names: ["ci-status"] }) } },
     { type: "user/message", seq: 3, data: { source: { kind: "skill-manager", form: "activation", name: "ponytail", turn: 2 } } },
+    { type: "user/message", seq: 4, data: { source: { kind: "plugin", plugin: "dsh-skills-manager", form: "notice", summary: JSON.stringify({ form: "activation", name: "ponytail", turn: 3 }) } } },
   ];
   assert.deepEqual(activeSkillNames(events), ["ponytail"]);
 });
@@ -275,6 +276,7 @@ test("activationStateOf respects surface visibility", () => {
 test("batchHasInjection only matches manager messages", () => {
   assert.equal(batchHasInjection([{ source: { kind: "user" } }, { source: managerSource({ form: "suggestion" }) }]), true);
   assert.equal(batchHasInjection([{ source: { kind: "skill-manager" } }]), true, "legacy sessions stay readable");
+  assert.equal(batchHasInjection([{ source: { kind: "plugin", plugin: "dsh-skills-manager" } }]), true, "retired plugin sources stay readable");
   assert.equal(batchHasInjection([{ source: { kind: "plugin", plugin: "other", form: "notice", summary: "x" } }]), false);
   assert.equal(batchHasInjection([{ source: { kind: "user" } }]), false);
   assert.equal(batchHasInjection([{}]), false);

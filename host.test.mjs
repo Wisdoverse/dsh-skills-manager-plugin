@@ -36,6 +36,8 @@ for (const lifecycleEvent of ["agent/created", "agent/session-start"]) {
       );
       assert.equal(decision.messages.length, 2, warnings.join("; "));
       assert.match(decision.messages[1].content[0].text, /Read this first/);
+      assert.equal(decision.messages[1].source.kind, "plugin:dsh-skills-manager");
+      assert.equal(decision.messages[1].source.plugin, undefined);
     } finally {
       if (previousHome === undefined) delete process.env.DSH_HOME;
       else process.env.DSH_HOME = previousHome;
@@ -105,8 +107,8 @@ for (const api of ["events", "snapshotEvents"]) {
       const activated = await step();
       assert.equal(activated.messages.length, 2);
       assert.deepEqual(
-        { kind: activated.messages[1].source.kind, plugin: activated.messages[1].source.plugin, form: activated.messages[1].source.form },
-        { kind: "plugin", plugin: "dsh-skills-manager", form: "notice" },
+        { kind: activated.messages[1].source.kind, form: activated.messages[1].source.form },
+        { kind: "plugin:dsh-skills-manager", form: "notice" },
       );
       assert.equal(JSON.parse(activated.messages[1].source.summary).name, skill.name);
       events.push({ type: "user/message", seq: 1, data: activated.messages[1] });
@@ -115,7 +117,9 @@ for (const api of ["events", "snapshotEvents"]) {
 
       // Reading the committed marker clears the pending in-memory activation.
       session.surface.nodes = [];
-      assert.equal((await post()).additionalContexts.length, 1);
+      const context = (await post()).additionalContexts;
+      assert.equal(context.length, 1);
+      assert.equal(context[0].source.kind, "plugin:dsh-skills-manager");
       assert.deepEqual(warnings, []);
     } finally {
       await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
