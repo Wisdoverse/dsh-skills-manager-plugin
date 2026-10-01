@@ -101,7 +101,7 @@ function messageOf(error) {
   return error instanceof Error ? error.message : String(error);
 }
 function managerSource(data) {
-  return { kind: "plugin", plugin: "dsh-skills-manager", form: "notice", summary: JSON.stringify(data) };
+  return { kind: "plugin:dsh-skills-manager", form: "notice", summary: JSON.stringify(data) };
 }
 
 function runGit(cwd, args, signal) {
@@ -509,7 +509,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.5",
+        version: "1.0.6",
         hasGit: git,
         home,
         skillsRoot,

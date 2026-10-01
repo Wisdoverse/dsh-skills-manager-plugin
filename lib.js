@@ -297,7 +297,7 @@ export function activationStateOf(events, surfaceNodes, name) {
 function managerSourceData(source) {
   if (!source) return null;
   if (source.kind === "skill-manager") return source;
-  if (source.kind !== "plugin" || source.plugin !== "dsh-skills-manager") return null;
+  if (source.kind !== "plugin:dsh-skills-manager" && !(source.kind === "plugin" && source.plugin === "dsh-skills-manager")) return null;
   if (source.form !== "notice" || typeof source.summary !== "string") return {};
   try {
     const data = JSON.parse(source.summary);

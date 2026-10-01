@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.6 - 2026-10-02
+
+### Fixed
+
+- Emit producer-owned plugin message sources accepted by DSH session format v4, while recognizing earlier activation markers.
+
 ## 1.0.5 - 2026-09-30
 
 ### Changed
