@@ -85,7 +85,7 @@ flowchart LR
 
 ### 环境要求
 
-- DeepSeek Harness `0.1.1-rc.2`、`0.1.2-alpha.3` 或 `0.1.3-alpha.1`；
+- DeepSeek Harness `0.1.1-rc.2`、`0.1.2-alpha.3`、`0.1.3-alpha.1` 或 `0.2.0-rc.2`；
 - Node.js `^22.19.0 || >=24.0.0`；
 - `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
 
@@ -129,12 +129,14 @@ dsh plugin --profile web add .
 
 | 组件 | 支持或持续验证范围 |
 | --- | --- |
-| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试；`0.2.0-rc.2` 隔离安装、Web 启动和 Settings API 烟测 |
+| DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试；`0.2.0-rc.2` 隔离安装、Web 启动、Settings API 和真实 `/name` Skill 调用 |
 | Node.js | `22.19.0` 与 `24.19.0` |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |
 
 `0.1.3-alpha.1` 适配支持 `session.snapshotEvents()` 和数组形式的可见消息序号，同时保留旧版 events API。该版本的完整安装/UI 烟测仍待对应宿主包在 npm 可用后验证。
+
+使用 DSH `0.2.0-rc.2` 时，请安装本插件 `1.0.6` 或更新版本：旧版插件发出的 `source.kind: "plugin"` 会被 DSH v4 会话格式拒绝。真实 Web Profile 测试中，`/ponytail-help` 成功注入完整 Skill 内容（`skill-invocation`），管理器消息使用 `plugin:dsh-skills-manager`，整轮对话正常完成。这验证了显式 Skill 调用和管理器注入；其他 `0.2.x` 宿主版本不在当前 peer 依赖范围内。
 
 DSH 仍处于 developer preview。需要可复现安装时，请把插件固定到具体 commit；升级 DSH 依赖后应重新运行安装烟测。
 
@@ -178,6 +180,8 @@ metadata:
 | `off` | 不参与自动匹配，但模型仍可手动调用 |
 
 Codex 风格的 `manual` 与 `disabled` 会作为 `off` 的别名处理。如果没有声明 `activation`，带显式 triggers 的 Skill 默认为 `auto`，其他 Skill 默认为 `suggest`。
+
+对于允许用户调用的 Skill，DSH 还支持输入 `/name` 直接加载完整内容，不受管理器是否建议该 Skill 的影响；单独的 `suggest` 只会添加提醒。
 
 ### 触发词与策略
 
