@@ -1,23 +1,31 @@
 <div align="center">
 
-# dsh-skills-manager
+<a id="dsh-skills-manager"></a>
+
+# 🧩 dsh-skills-manager
 
 **Proactive skill activation, hook orchestration, and GitHub sync for DeepSeek Harness.**
 
-**English** · [简体中文](./README.zh-CN.md)
+<strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a>
 
-[![npm version](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
-[![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-16a34a.svg)](./LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Last commit](https://img.shields.io/github/last-commit/Wisdoverse/dsh-skills-manager-plugin)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/commits/main)
-[![GitHub stars](https://img.shields.io/github/stars/Wisdoverse/dsh-skills-manager-plugin?style=flat)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/stargazers)
+[![npm version](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm&amp;style=flat-square)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
+[![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-16a34a.svg?style=flat-square)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&amp;logoColor=white&amp;style=flat-square)](https://nodejs.org/)
+[![Last commit](https://img.shields.io/github/last-commit/Wisdoverse/dsh-skills-manager-plugin?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/Wisdoverse/dsh-skills-manager-plugin?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/stargazers)
 
 </div>
 
-> Turn passive `SKILL.md` files into event-driven, GitHub-managed capabilities that activate when they are actually useful.
+**🚀 Quick install**
 
-DSH already exposes the lifecycle hooks. This plugin connects those hooks to skill declarations, adds proactive matching, and provides a complete install/update/settings workflow—without changing DSH core.
+```sh
+dsh plugin --profile web add @wisdoverse/dsh-skills-manager
+```
+
+Restart the Web profile after installation. See [requirements and installation options](#quick-start).
+
+[🚀 Installation](#quick-start) · [✨ Features](#highlights) · [⚙️ Configuration](#skill-configuration) · [🐛 Feedback](https://github.com/Wisdoverse/dsh-skills-manager-plugin/issues)
 
 ## Table of contents
 
@@ -50,7 +58,7 @@ The built-in DSH `skill` tool relies on the model to notice a short summary and 
 
 ## Highlights
 
-| | Capability | What it provides |
+| Icon | Capability | Description |
 | --- | --- | --- |
 | 🚀 | Proactive activation | Full skill injection for strong matches and lightweight reminders for suggestions |
 | 🪝 | Skill-level hooks | `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `SessionStart` |
@@ -259,6 +267,10 @@ Project-local skills remain owned by the project's Git repository. The manager's
 ## Management and observability
 
 ### Settings UI
+
+![Skill Management settings in the DSH Web profile](https://raw.githubusercontent.com/Wisdoverse/dsh-skills-manager-plugin/main/assets/skill-manager-settings.jpg)
+
+*The settings page shows activation controls, source details, and skill management actions.*
 
 Settings → **Skill Management** provides:
 
