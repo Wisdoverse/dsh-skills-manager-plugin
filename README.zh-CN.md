@@ -1,23 +1,31 @@
 <div align="center">
 
-# dsh-skills-manager
+<a id="dsh-skills-manager"></a>
+
+# 🧩 dsh-skills-manager
 
 **面向 DeepSeek Harness 的主动 Skill 激活、Hook 编排与 GitHub 同步插件。**
 
-[English](./README.md) · **简体中文**
+<a href="./README.md">English</a> · <strong>简体中文</strong>
 
-[![npm version](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
-[![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-16a34a.svg)](./LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Last commit](https://img.shields.io/github/last-commit/Wisdoverse/dsh-skills-manager-plugin)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/commits/main)
-[![GitHub stars](https://img.shields.io/github/stars/Wisdoverse/dsh-skills-manager-plugin?style=flat)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/stargazers)
+[![npm 版本](https://img.shields.io/npm/v/@wisdoverse/dsh-skills-manager?logo=npm&amp;style=flat-square)](https://www.npmjs.com/package/@wisdoverse/dsh-skills-manager)
+[![CI](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml/badge.svg?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/actions/workflows/ci.yml)
+[![许可证](https://img.shields.io/badge/license-MIT-16a34a.svg?style=flat-square)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-ESM-339933.svg?logo=nodedotjs&amp;logoColor=white&amp;style=flat-square)](https://nodejs.org/)
+[![最近提交](https://img.shields.io/github/last-commit/Wisdoverse/dsh-skills-manager-plugin?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/commits/main)
+[![GitHub Stars](https://img.shields.io/github/stars/Wisdoverse/dsh-skills-manager-plugin?style=flat-square)](https://github.com/Wisdoverse/dsh-skills-manager-plugin/stargazers)
 
 </div>
 
-> 把被动的 `SKILL.md` 变成事件驱动、可由 GitHub 管理的能力，并在真正需要时自动激活。
+**🚀 快速安装**
 
-DSH 已经提供完整的生命周期 Hook。本插件将这些 Hook 与 Skill 声明连接起来，同时补充主动匹配、GitHub 安装更新和 Settings 管理能力，无需修改 DSH 核心。
+```sh
+dsh plugin --profile web add @wisdoverse/dsh-skills-manager
+```
+
+安装后请重启 Web profile。安装前请查看[环境要求与安装选项](#快速开始)。
+
+[🚀 安装](#快速开始) · [✨ 功能](#核心特性) · [⚙️ 配置](#skill-配置) · [🐛 反馈](https://github.com/Wisdoverse/dsh-skills-manager-plugin/issues)
 
 ## 目录
 
@@ -50,7 +58,7 @@ DSH 内置的 `skill` 工具依赖模型先注意到一段简短摘要，再自�
 
 ## 核心特性
 
-| | 能力 | 说明 |
+| 图标 | 功能 | 说明 |
 | --- | --- | --- |
 | 🚀 | 主动激活 | 强匹配注入完整 Skill，建议匹配只注入轻量提醒 |
 | 🪝 | Skill 级 Hook | 支持 `UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PostToolUseFailure` 和 `SessionStart` |
@@ -259,6 +267,10 @@ Filesystem Provider 按以下优先级解析 Skill 根目录：
 ## 管理与可观测性
 
 ### Settings 界面
+
+![DSH Web Profile 中的 Skill Management 设置界面](https://raw.githubusercontent.com/Wisdoverse/dsh-skills-manager-plugin/main/assets/skill-manager-settings.jpg)
+
+*页面展示激活控制、来源信息和 Skill 管理操作。*
 
 Settings → **Skill 管理** 提供：
 
