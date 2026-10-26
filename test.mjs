@@ -29,6 +29,8 @@ import {
   activeSkillNames,
   ACTIVATION_MODE_ALIASES,
   recordMatches,
+  overrideKey,
+  skillRecord,
   scopeOfRecord,
   tokenize,
   overlapRatio,
@@ -151,6 +153,26 @@ test("Codex mode aliases map manual/disabled to off", () => {
   assert.equal(resolveActivationMode({ activation: "disabled" }, undefined), "off");
   assert.equal(resolveActivationMode({ activation: "auto" }, undefined), "auto");
   assert.ok(ACTIVATION_MODE_ALIASES);
+});
+
+test("scoped overrides preserve legacy settings and Git ownership", () => {
+  const name = "shared-guide";
+  const state = validateState({
+    skills: { [name]: { sourceId: "git:fixture", mode: "off", hooks: { SessionStart: { activate: true } } } },
+    overrides: {
+      [overrideKey(name, "user")]: { scope: "user", mode: "suggest" },
+      [overrideKey(name, "project", "/a")]: { scope: "project", cwd: "/a", mode: "auto", triggers: ["project-a"] },
+    },
+  });
+  const restored = parseStateText(serializeState(state));
+  assert.equal(restored.skills[name].sourceId, "git:fixture");
+  assert.equal(skillRecord(restored, name, "user-dsh").sourceId, "git:fixture");
+  assert.equal(skillRecord(restored, name, "user-dsh").mode, "suggest");
+  assert.equal(skillRecord(restored, name, "project-dsh", "/a").sourceId, undefined);
+  assert.equal(skillRecord(restored, name, "project-dsh", "/b"), undefined);
+  const skills = [{ name, description: "Guide", source: "project-dsh", metadata: {} }];
+  assert.equal(rankSkills(skills, "project-a", restored, "/a")[0].mode, "auto");
+  assert.equal(rankSkills(skills, "project-a", restored, "/b").length, 0);
 });
 
 test("recordMatches scopes overrides to their owning root", () => {

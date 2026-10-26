@@ -138,7 +138,7 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 | Component | Supported or continuously verified |
 | --- | --- |
 | DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests; `0.1.3-alpha.1` tagged-source API review and session-hook regression tests; `0.2.0-rc.2` isolated install, Web boot, Settings API, and live `/name` skill invocation |
-| DeepSeek Harness `0.2.1` | `0.2.1-rc.2` and `0.2.1-rc.3`: isolated installation, composed configuration, Web startup, Settings API and UI, and seven host regression tests per version |
+| DeepSeek Harness `0.2.1` | `0.2.1-rc.2` and `0.2.1-rc.3`: isolated installation, composed configuration, Web startup, Settings API and UI, and 14 host regression tests per version |
 | Node.js | `22.19.0` and `24.19.0` |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |
@@ -151,7 +151,7 @@ For DSH `0.2.1-rc.2` or `0.2.1-rc.3`, use plugin `1.0.7` or later. Skill activat
 
 The `engines.dsh` declaration and host peer dependencies specify the same supported versions. Other `0.2.x` versions remain outside that range.
 
-The `0.2.1` smoke tests use Windows and Node.js `24.19.0`. They do not verify full model turns or Office features.
+The `0.2.1` smoke tests use Windows and Node.js `24.19.0`. A real headless model turn completes with automatic skill activation on each version. Office features remain untested.
 
 DSH is in developer preview. Pin the plugin to a commit when reproducibility matters, and re-run the install smoke test when upgrading DSH dependencies.
 
@@ -253,6 +253,8 @@ Plugin manifests are detected in this order:
 The Settings page displays the plugin name, version, skills, and hook count. Safe in-repository Node lifecycle hooks are supported for `SessionStart` and `UserPromptSubmit`.
 
 State is stored in `<DSH_HOME>/skill-manager.json`, including sources, refs, commits, installed paths, scoped overrides, and the 50 most recent operations.
+
+The current code stores overrides separately from Git ownership records. Existing manifests remain readable. Back up this file before downgrading because older versions do not preserve the separate override map.
 
 ## Project-scoped skills
 

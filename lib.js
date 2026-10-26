@@ -42,6 +42,7 @@ export function defaultState() {
     config: defaultConfig(),
     skillSources: [],
     skills: {},
+    overrides: {},
     events: [],
   };
 }
@@ -198,9 +199,7 @@ export function overlapRatio(left, right) {
 }
 
 /**
- * Record scope: overrides are keyed by skill name in state, so they must be
- * scoped to the root that owns the skill — a project skill never inherits the
- * user-level record of the same name (project roots outrank user roots).
+ * Match an override to the skill source and project directory that own it.
  * @param record - a state skills entry (`undefined` allowed).
  * @param source - the summary's `source` bucket (`project-dsh`, `project-agents`,
  *   `custom`, `user-dsh`, `user-agents`, `bundled`).
@@ -221,6 +220,20 @@ export function scopeOfRecord(record) {
   return record && record.scope === "project" ? "project" : "user";
 }
 
+/** Persist each override separately from Git ownership and other projects. */
+export function overrideKey(name, scope, cwd) {
+  return JSON.stringify([name, scope, scope === "project" ? cwd : ""]);
+}
+
+/** Read scoped overrides, with older manifests as the fallback. */
+export function skillRecord(state, name, source, cwd) {
+  const legacy = state?.skills?.[name];
+  const base = recordMatches(legacy, source, cwd) ? legacy : undefined;
+  const scope = source === "project-dsh" || source === "project-agents" ? "project" : "user";
+  const override = state?.overrides?.[overrideKey(name, scope, cwd)];
+  return recordMatches(override, source, cwd) ? { ...base, ...override } : base;
+}
+
 /**
  * Rank model-invocable skills against query text.
  * @param skills - skill summaries (registry `list()` output) plus metadata.
@@ -234,9 +247,7 @@ export function rankSkills(skills, query, state, cwd) {
   const ranked = [];
   for (const skill of skills) {
     if (skill.invocation && skill.invocation.modelInvocable === false) continue;
-    const record = state && state.skills
-      ? (recordMatches(state.skills[skill.name], skill.source, cwd) ? state.skills[skill.name] : undefined)
-      : undefined;
+    const record = skillRecord(state, skill.name, skill.source, cwd);
     const { score, reasons } = scoreSkill(skill, normalized, record && record.triggers);
     if (score <= 0) continue;
     ranked.push({
@@ -287,7 +298,7 @@ export function activationStateOf(events, surfaceNodes, name) {
     const event = events[index];
     if (event.type !== "user/message") continue;
     const source = managerSourceData(event.data && event.data.source);
-    if (!source || source.form !== "activation") continue;
+    if (!source || (source.form !== "activation" && source.form !== "hook-activate")) continue;
     if (source.name !== name) continue;
     return { active: visible.has(event.seq), turn: typeof source.turn === "number" ? source.turn : undefined };
   }
@@ -632,6 +643,20 @@ export function validateState(input) {
       };
     }
   }
+  if (input.overrides && typeof input.overrides === "object" && !Array.isArray(input.overrides)) {
+    for (const [key, entry] of Object.entries(input.overrides)) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      state.overrides[key] = {
+        scope: entry.scope === "project" ? "project" : "user",
+        cwd: typeof entry.cwd === "string" ? entry.cwd : undefined,
+        mode: ACTIVATION_MODES.includes(entry.mode) ? entry.mode : undefined,
+        triggers: Array.isArray(entry.triggers)
+          ? entry.triggers.filter((item) => typeof item === "string").slice(0, 32)
+          : undefined,
+        hooks: entry.hooks && typeof entry.hooks === "object" ? sanitizeHooks(entry.hooks) : undefined,
+      };
+    }
+  }
   if (Array.isArray(input.events)) state.events = input.events.slice(-MAX_EVENTS);
   return state;
 }
@@ -812,7 +837,7 @@ export function activeSkillNames(events) {
     if (event.type !== "user/message") continue;
     const source = managerSourceData(event.data && event.data.source);
     if (!source) continue;
-    const candidate = source.form === "activation" ? source.name : undefined;
+    const candidate = source.form === "activation" || source.form === "hook-activate" ? source.name : undefined;
     if (typeof candidate === "string" && !seen.has(candidate)) {
       seen.add(candidate);
       names.push(candidate);

@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 
 import { apply } from "./index.js";
 
@@ -25,7 +26,7 @@ for (const [lifecycleEvent, currentDirectory] of [["agent/created", false], ["ag
       apply({
         get() { return currentDirectory ? { get: () => cwd } : undefined; },
         on(name, handler) { handlers.set(name, handler); },
-        events: { dispatch() {} },
+        events: { async parallel() {} },
         logger: { warn(message) { warnings.push(message); } },
         skills: {
           snapshot: async (options) => {
@@ -54,8 +55,11 @@ for (const [lifecycleEvent, currentDirectory] of [["agent/created", false], ["ag
   });
 }
 
-for (const api of ["events", "snapshotEvents"]) {
-  test(`${api}: activation survives resume and reinjects after compaction`, async () => {
+for (const [api, form] of [
+  ["events", "activation"], ["events", "hook-activate"],
+  ["snapshotEvents", "activation"], ["snapshotEvents", "hook-activate"],
+]) {
+  test(`${api}: ${form} survives resume and reinjects after compaction`, async () => {
     const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
     const previousHome = process.env.DSH_HOME;
     process.env.DSH_HOME = home;
@@ -84,7 +88,7 @@ for (const api of ["events", "snapshotEvents"]) {
       apply({
         get() {},
         on(name, handler) { handlers.set(name, handler); },
-        events: { dispatch() {} },
+        events: { async parallel() {} },
         logger: { warn(message) { warnings.push(message); } },
         skills: { snapshot: async () => ({ complete: true, skills: [skill] }), get: async () => skill },
         tools: { register() {} },
@@ -100,7 +104,7 @@ for (const api of ["events", "snapshotEvents"]) {
           kind: "plugin",
           plugin: "dsh-skills-manager",
           form: "notice",
-          summary: JSON.stringify({ form: "activation", name: skill.name }),
+          summary: JSON.stringify({ form, name: skill.name }),
         },
       } });
       session.surface.nodes = [0];
@@ -138,6 +142,161 @@ for (const api of ["events", "snapshotEvents"]) {
   });
 }
 
+test("manager events reach Cordis listeners and contain listener failures", async () => {
+  const { Context } = createRequire(import.meta.resolve("@deepseek-ai/dsh-tools"))("@deepseek-ai/cordis");
+  const context = new Context();
+  const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
+  const previousHome = process.env.DSH_HOME;
+  process.env.DSH_HOME = home;
+  const handlers = new Map();
+  const received = [];
+  const warnings = [];
+  let tool;
+  const skill = { name: "guard", metadata: { hooks: { PreToolUse: [{ tool: "bash", decision: "deny" }] } } };
+  context.on("skill-manager/update", (payload) => { received.push(payload.kind); });
+  context.on("skill-manager/hook", (payload) => { received.push(payload.event); });
+  context.on("skill-manager/hook", async () => { throw new Error("listener failed"); });
+  try {
+    apply({
+      get() {},
+      on(name, handler) { handlers.set(name, handler); },
+      events: context.events,
+      logger: { warn(message) { warnings.push(message); } },
+      skills: { snapshot: async () => ({ complete: true, skills: [skill] }), get: async () => skill },
+      tools: { register(value) { tool = value; } },
+      inject() {},
+    });
+    assert.equal((await tool.execute({ action: "update" }, { signal: new AbortController().signal })).ok, true);
+    const decision = await handlers.get("tools/pre-execute")(
+      { agent: { session: { header: { cwd: home } } }, name: "bash", arguments: {} },
+      async () => ({ kind: "allow" }),
+    );
+    assert.equal(decision.kind, "deny");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(received, ["update", "PreToolUse"]);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /skill-manager\/hook listener rejected/);
+  } finally {
+    if (previousHome === undefined) delete process.env.DSH_HOME;
+    else process.env.DSH_HOME = previousHome;
+    await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
+  }
+});
+
+test("settings preserve user and multiple project overrides after restart", async () => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
+  const previousHome = process.env.DSH_HOME;
+  process.env.DSH_HOME = home;
+  const signal = new AbortController().signal;
+  const name = "shared-guide";
+  const projectA = join(home, "a");
+  const projectB = join(home, "b");
+  function mount() {
+    let tool;
+    const skill = (cwd) => ({ name, description: "Shared guide", source: cwd ? "project-dsh" : "user-dsh", metadata: {} });
+    apply({
+      get() {}, on() {}, events: { async parallel() {} }, logger: { warn() {} },
+      skills: {
+        snapshot: async ({ cwd }) => ({ complete: true, skills: [skill(cwd)] }),
+        get: async (_name, { cwd }) => skill(cwd),
+      },
+      tools: { register(value) { tool = value; } }, inject() {},
+    });
+    return async (args) => {
+      const result = await tool.execute(args, { signal });
+      assert.equal(result.ok, true, result.message);
+      return result.message;
+    };
+  }
+  try {
+    await writeFile(join(home, "skill-manager.json"), "{}");
+    let action = mount();
+    await action({ action: "set-mode", name, scope: "user", mode: "off" });
+    await action({ action: "set-triggers", name, scope: "project", cwd: projectA, triggers: ["project-a"] });
+    await action({ action: "set-mode", name, scope: "project", cwd: projectA, mode: "auto" });
+    await action({ action: "set-mode", name, scope: "project", cwd: projectB, mode: "suggest" });
+    assert.match(await action({ action: "status" }), /shared-guide: off/);
+    assert.match(await action({ action: "status", cwd: projectA }), /shared-guide: auto \[project-a\]/);
+    assert.match(await action({ action: "status", cwd: projectB }), /shared-guide: suggest(?! \[project-a\])/);
+    action = mount();
+    assert.match(await action({ action: "status" }), /shared-guide: off/);
+    assert.match(await action({ action: "status", cwd: projectA }), /shared-guide: auto \[project-a\]/);
+    assert.match(await action({ action: "status", cwd: projectB }), /shared-guide: suggest(?! \[project-a\])/);
+  } finally {
+    if (previousHome === undefined) delete process.env.DSH_HOME;
+    else process.env.DSH_HOME = previousHome;
+    await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
+  }
+});
+
+test("concurrent settings writes persist both changes during startup", async () => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
+  const previousHome = process.env.DSH_HOME;
+  process.env.DSH_HOME = home;
+  let tool;
+  try {
+    apply({
+      get() {}, on() {}, events: { async parallel() {} }, logger: { warn() {} },
+      skills: { snapshot: async () => ({ complete: true, skills: [] }) },
+      tools: { register(value) { tool = value; } }, inject() {},
+    });
+    const results = await Promise.all([
+      tool.execute({ action: "set-config", config: { maxAuto: 5 } }, {}),
+      tool.execute({ action: "set-config", config: { maxSuggest: 6 } }, {}),
+    ]);
+    for (const result of results) assert.equal(result.ok, true, result.message);
+    const saved = JSON.parse(await readFile(join(home, "skill-manager.json"), "utf8"));
+    assert.equal(saved.config.maxAuto, 5);
+    assert.equal(saved.config.maxSuggest, 6);
+  } finally {
+    if (previousHome === undefined) delete process.env.DSH_HOME;
+    else process.env.DSH_HOME = previousHome;
+    await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
+  }
+});
+
+for (const [enabled, mode] of [[true, "off"], [false, "auto"]]) {
+  test(`automatic hook activation respects enabled=${enabled} and mode=${mode}`, async () => {
+    const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
+    const previousHome = process.env.DSH_HOME;
+    process.env.DSH_HOME = home;
+    const handlers = new Map();
+    const warnings = [];
+    const skill = {
+      name: "hook-guide", description: "Hook guide", provider: "filesystem", source: "user-dsh", content: "Do not inject this.",
+      invocation: { modelInvocable: true, userInvocable: true },
+      metadata: { hooks: { SessionStart: { activate: true }, PostToolUse: [{ tool: "bash", action: "activate" }] } },
+    };
+    const agent = { session: { header: { cwd: home }, surface: { nodes: [] }, snapshotEvents: () => [] } };
+    const prompt = { source: { kind: "user" }, content: [{ type: "text", text: "hello" }] };
+    const signal = new AbortController().signal;
+    try {
+      await writeFile(join(home, "skill-manager.json"), JSON.stringify({ config: { enabled }, skills: { [skill.name]: { mode } } }));
+      apply({
+        get() {}, on(name, handler) { handlers.set(name, handler); },
+        events: { async parallel() {} }, logger: { warn(message) { warnings.push(message); } },
+        skills: { snapshot: async () => ({ complete: true, skills: [skill] }), get: async () => skill },
+        tools: { register() {} }, inject() {},
+      });
+      await handlers.get("agent/created")({ agent });
+      const post = await handlers.get("tools/post-execute")(
+        { agent, name: "bash", arguments: {}, signal }, { content: [{ type: "text", text: "done" }] },
+        async () => ({ kind: "accept" }),
+      );
+      assert.equal(post.additionalContexts, undefined);
+      const step = await handlers.get("agent/pre-step")(
+        { agent, messages: [prompt], turn: 1, step: 1, signal }, async () => ({ kind: "enter", messages: [prompt] }),
+      );
+      assert.equal(step.messages.length, 1);
+      assert.deepEqual(warnings, []);
+    } finally {
+      if (previousHome === undefined) delete process.env.DSH_HOME;
+      else process.env.DSH_HOME = previousHome;
+      await rm(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 10 });
+    }
+  });
+}
+
 test("a fresh DSH home returns a valid Settings view", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
   const previousHome = process.env.DSH_HOME;
@@ -148,7 +307,7 @@ test("a fresh DSH home returns a valid Settings view", async () => {
     apply({
       get() {},
       on() {},
-      events: { dispatch() {} },
+      events: { async parallel() {} },
       logger: { warn() {} },
       skills: {
         snapshot: async () => ({ complete: true, skills: [] }),
@@ -238,7 +397,7 @@ test("current working directory selects project overrides, hooks, and scoped ski
         return { get(session) { assert.equal(session, agent.session); return cwd; } };
       },
       on(name, handler) { handlers.set(name, handler); },
-      events: { dispatch() {} },
+      events: { async parallel() {} },
       logger: { warn(message) { warnings.push(message); } },
       skills: {
         snapshot: async (options) => { checkLookup(options); return { complete: true, skills: [skill, postSkill] }; },
