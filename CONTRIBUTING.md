@@ -7,7 +7,7 @@ Thanks for helping improve `dsh-skills-manager`.
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm 11;
 - Git;
-- DeepSeek Harness `0.1.1-rc.2` and `0.1.2-alpha.3` for integration smoke tests.
+- DeepSeek Harness `0.2.1-rc.2` and `0.2.1-rc.3` for integration smoke tests.
 
 ## Setup
 
@@ -28,6 +28,8 @@ pnpm pack --dry-run
 ```
 
 The test suite includes a package-contract check for `dsh.bundle`, `cordis.patch.yml`, exports, and packaged files. CI runs the same gates on Ubuntu and Windows with the supported Node.js versions.
+
+The lockfile retains DSH `0.1.1-rc.2` for legacy API regression tests. Run host smoke tests with both listed `0.2.1` versions.
 
 For changes to the bundle or host wiring, also install the checkout into a disposable DSH Home and verify the composed configuration contains the plugin layer:
 

@@ -162,6 +162,12 @@ export function apply(ctx) {
   const skillsRoot = join(home, "skills");
   const pluginDataRoot = join(home, "plugin-data");
 
+  function agentCwd(agent) {
+    const session = agent?.session;
+    if (session === undefined) return undefined;
+    return ctx.get("workingDirectory")?.get(session) ?? session.header?.cwd;
+  }
+
   /** @type {ReturnType<typeof defaultState> | null} */
   let state = null;
 
@@ -299,8 +305,8 @@ export function apply(ctx) {
     const injections = [];
     for (const event of events) {
       const payload = event === "UserPromptSubmit"
-        ? { hook_event_name: event, prompt, cwd: session.header?.cwd }
-        : { hook_event_name: event, source: "startup", cwd: session.header?.cwd };
+        ? { hook_event_name: event, prompt, cwd: agentCwd(agent) }
+        : { hook_event_name: event, source: "startup", cwd: agentCwd(agent) };
       for (const source of current.skillSources) {
         for (const hook of source.plugin?.hooks ?? []) {
           if (hook.event !== event) continue;
@@ -337,7 +343,7 @@ export function apply(ctx) {
   async function hookIndexFor(cwd, scope) {
     const key = scope ?? cwd ?? "";
     const cached = hookIndex.get(key);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined && cached.cwd === cwd) return cached.index;
     const current = await loadState();
     const lookup = { cwd, scope };
     const snapshot = await ctx.skills.snapshot(lookup);
@@ -357,14 +363,14 @@ export function apply(ctx) {
         if (hooks.sessionStartActivate) index.sessionStart.push(base);
       }
     }
-    hookIndex.set(key, index);
+    hookIndex.set(key, { cwd, index });
     return index;
   }
 
   // Hook: SessionStart — queue skills whose SessionStart hook asks to activate.
   async function queueSessionStart({ agent }) {
     try {
-      const index = await hookIndexFor(agent.session?.header?.cwd, agent);
+      const index = await hookIndexFor(agentCwd(agent), agent);
       if (index.sessionStart.length === 0) return;
       let set = sessionStarts.get(agent.session);
       if (set === undefined) {
@@ -384,7 +390,7 @@ export function apply(ctx) {
     const decision = await next();
     if (decision.kind !== "allow") return decision;
     try {
-      const index = await hookIndexFor(exec.agent?.session?.header?.cwd, exec.agent);
+      const index = await hookIndexFor(agentCwd(exec.agent), exec.agent);
       const entries = [...(index.pre.get("*") ?? []), ...(index.pre.get(exec.name) ?? [])];
       if (entries.length === 0) return decision;
       const text = toolCallText(exec.name, exec.arguments);
@@ -408,7 +414,8 @@ export function apply(ctx) {
     const decision = await next();
     try {
       const agent = exec.agent;
-      const index = await hookIndexFor(agent?.session?.header?.cwd, agent);
+      const cwd = agentCwd(agent);
+      const index = await hookIndexFor(cwd, agent);
       const entries = [...(index.post.get("*") ?? []), ...(index.post.get(exec.name) ?? [])];
       if (entries.length === 0) return decision;
       const text = resultText(result.content);
@@ -418,7 +425,7 @@ export function apply(ctx) {
         if (seen.has(name) || !matchHookWhen(hook.when, text)) continue;
         seen.add(name);
         if (sessionActiveOf(agent, name) || activationStateOf(sessionEvents(agent?.session), agent?.session?.surface?.nodes, name).active) continue;
-        const skill = await ctx.skills.get(name, { cwd: agent?.session?.header?.cwd, signal: exec.signal });
+        const skill = await ctx.skills.get(name, { cwd, scope: agent, signal: exec.signal });
         if (skill === undefined || !isModelInvocable(skill)) continue;
         markSessionActive(agent, name);
         emitHook("PostToolUse", name, "activate", exec.name);
@@ -509,7 +516,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.6",
+        version: "1.0.7",
         hasGit: git,
         home,
         skillsRoot,
@@ -697,7 +704,7 @@ export function apply(ctx) {
     await loadState();
     switch (args.action) {
       case "status": {
-        const cwd = typeof args.cwd === "string" ? args.cwd : scope?.session?.header?.cwd;
+        const cwd = typeof args.cwd === "string" ? args.cwd : agentCwd(scope);
         const view = await managerView(cwd, scope);
         const lines = [
           `skill manager ${view.meta.hasGit ? "ready" : "ready (git unavailable)"} — ${view.skills.length} skills`,
@@ -813,7 +820,7 @@ export function apply(ctx) {
       if (!text.trim()) return decision;
       const injections = await pluginHookInjections(current, agent, text, turn, step, signal);
       const lookup = {
-        cwd: agent.session?.header?.cwd,
+        cwd: agentCwd(agent),
         signal,
         scope: agent,
       };
@@ -913,7 +920,7 @@ export function apply(ctx) {
       // Hook: UserPromptSubmit — skills that are active this session may
       // attach extra context to every submitted prompt.
       try {
-        const promptHooks = (await hookIndexFor(agent.session?.header?.cwd, agent)).userPrompt;
+        const promptHooks = (await hookIndexFor(lookup.cwd, agent)).userPrompt;
         const activeNames = new Set([...activeSkillNames(events), ...(sessionActiveSet(agent))]);
         let injected = 0;
         for (const item of promptHooks) {
