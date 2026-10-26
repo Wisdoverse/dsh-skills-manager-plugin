@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.7 - 2026-10-26
+
+### Changed
+
+- Accept DSH `0.2.1-rc.2` and `0.2.1-rc.3` in host peer dependencies and `engines.dsh`. Retain the existing host range.
+
+### Fixed
+
+- Use the current session directory for skill activation, project overrides, tool status, and plugin hook payloads.
+- Rebuild each scope's hook cache when its working directory changes.
+- Preserve the agent scope when loading skills after tool execution.
+
 ## 1.0.6 - 2026-10-02
 
 ### Fixed
