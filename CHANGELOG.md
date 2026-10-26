@@ -4,20 +4,6 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
-
-### Fixed
-
-- Preserve tool-hook activation markers across session resume and context compaction.
-- Deliver manager lifecycle events to Cordis listeners and report listener failures.
-- Store user and project overrides separately, preserving Git ownership and settings for other directories.
-- Share startup state reads and serialize writes within one host process to prevent lost settings.
-- Respect the global activation switch and each skill's `off` mode when hooks request automatic activation.
-
-### Compatibility
-
-- Existing manifests remain readable. Back up `skill-manager.json` before downgrading because older versions do not preserve the separate override map.
-
 ## 1.0.7 - 2026-10-26
 
 ### Changed
@@ -26,9 +12,18 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Preserve tool-hook activation markers across session resume and context compaction.
+- Deliver manager lifecycle events to Cordis listeners and report listener failures.
+- Store user and project overrides separately, preserving Git ownership and settings for other directories.
+- Share startup state reads and serialize writes within one host process to prevent lost settings.
+- Respect the global activation switch and each skill's `off` mode when hooks request automatic activation.
 - Use the current session directory for skill activation, project overrides, tool status, and plugin hook payloads.
 - Rebuild each scope's hook cache when its working directory changes.
 - Preserve the agent scope when loading skills after tool execution.
+
+### Compatibility
+
+- Existing manifests remain readable. Back up `skill-manager.json` before downgrading because older versions do not preserve the separate override map.
 
 ## 1.0.6 - 2026-10-02
 
