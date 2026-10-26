@@ -138,7 +138,7 @@ dsh plugin --profile web add .
 | 组件 | 支持或持续验证范围 |
 | --- | --- |
 | DeepSeek Harness | `0.1.1-rc.2` 依赖合同；`0.1.2-alpha.3` 依赖合同及隔离安装与 UI 烟测；`0.1.3-alpha.1` 发布标签源码接口核对及会话 Hook 回归测试；`0.2.0-rc.2` 隔离安装、Web 启动、Settings API 和真实 `/name` Skill 调用 |
-| DeepSeek Harness `0.2.1` | `0.2.1-rc.2` 与 `0.2.1-rc.3`：隔离安装、配置合成、Web 启动、Settings API 与 UI，以及每个版本的 7 项宿主回归测试 |
+| DeepSeek Harness `0.2.1` | `0.2.1-rc.2` 与 `0.2.1-rc.3`：隔离安装、配置合成、Web 启动、Settings API 与 UI，以及每个版本的 14 项宿主回归测试 |
 | Node.js | `22.19.0` 与 `24.19.0` |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |
@@ -151,7 +151,7 @@ dsh plugin --profile web add .
 
 `engines.dsh` 声明与宿主 peer 依赖指定相同的支持范围。其他 `0.2.x` 版本仍不在该范围内。
 
-`0.2.1` 烟测使用 Windows 和 Node.js `24.19.0`。这些测试不验证完整模型对话或 Office 功能。
+`0.2.1` 烟测使用 Windows 和 Node.js `24.19.0`。两个版本均完成了自动激活测试技能的真实无界面模型对话。Office 功能尚未验证。
 
 DSH 仍处于 developer preview。需要可复现安装时，请把插件固定到具体 commit；升级 DSH 依赖后应重新运行安装烟测。
 
@@ -253,6 +253,8 @@ skill_manager uninstall skill-name
 Settings 页面会展示插件名称、版本、Skills 和 Hook 数量。Manifest 中指向仓库内部 Node 脚本的安全生命周期 Hook，可用于 `SessionStart` 与 `UserPromptSubmit`。
 
 状态保存在 `<DSH_HOME>/skill-manager.json`，包括来源、ref、commit、安装路径、作用域覆盖和最近 50 条操作记录。
+
+当前代码将覆盖配置与 Git 来源归属记录分开保存，仍可读取旧版状态文件。降级前请备份此文件，因为旧版不会保留独立的覆盖配置表。
 
 ## 项目级 Skills
 

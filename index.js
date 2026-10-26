@@ -73,7 +73,8 @@ import {
   resultText,
   activeSkillNames,
   sanitizeHooks,
-  recordMatches,
+  overrideKey,
+  skillRecord,
   scopeOfRecord,
 } from "./lib.js";
 
@@ -170,9 +171,15 @@ export function apply(ctx) {
 
   /** @type {ReturnType<typeof defaultState> | null} */
   let state = null;
+  let loading;
+  let saving = Promise.resolve();
 
-  async function loadState() {
-    if (state !== null) return state;
+  function loadState() {
+    if (state !== null) return Promise.resolve(state);
+    return loading ??= readState();
+  }
+
+  async function readState() {
     try {
       state = parseStateText(await readFile(stateFile, "utf8"));
     } catch (error) {
@@ -186,12 +193,16 @@ export function apply(ctx) {
     return state;
   }
 
-  async function saveState() {
-    const current = await loadState();
-    await mkdir(dirname(stateFile), { recursive: true });
-    const temp = `${stateFile}.tmp`;
-    await writeFile(temp, serializeState(current), "utf8");
-    await rename(temp, stateFile);
+  function saveState() {
+    const pending = saving.then(async () => {
+      const current = await loadState();
+      await mkdir(dirname(stateFile), { recursive: true });
+      const temp = `${stateFile}.tmp`;
+      await writeFile(temp, serializeState(current), "utf8");
+      await rename(temp, stateFile);
+    });
+    saving = pending.catch(() => {});
+    return pending;
   }
 
   function applyState(patch) {
@@ -201,7 +212,7 @@ export function apply(ctx) {
 
   function notifyUpdate(detail) {
     const payload = { at: new Date().toISOString(), ...detail };
-    Promise.resolve(ctx.events.dispatch("emit", ["skill-manager/update", payload])).catch((error) => {
+    ctx.events.parallel("skill-manager/update", payload).catch((error) => {
       ctx.logger.warn(`skill-manager/update listener rejected: ${messageOf(error)}`);
     });
   }
@@ -251,7 +262,7 @@ export function apply(ctx) {
 
   function emitHook(event, skill, action, detail = "") {
     const payload = { at: new Date().toISOString(), event, skill, action, detail };
-    Promise.resolve(ctx.events.dispatch("emit", ["skill-manager/hook", payload])).catch((error) => {
+    ctx.events.parallel("skill-manager/hook", payload).catch((error) => {
       ctx.logger.warn(`skill-manager/hook listener rejected: ${messageOf(error)}`);
     });
   }
@@ -352,8 +363,7 @@ export function apply(ctx) {
       for (const summary of snapshot.skills) {
         const def = await ctx.skills.get(summary.name, lookup);
         if (def === undefined || !def.metadata) continue;
-        const record = current.skills[summary.name];
-        const overrides = recordMatches(record, summary.source, cwd) ? record : undefined;
+        const overrides = skillRecord(current, summary.name, summary.source, cwd);
         const hooks = normalizeHooks(def.metadata, overrides?.hooks);
         if (hookCount(hooks) === 0) continue;
         const base = { name: summary.name, hooks };
@@ -413,6 +423,8 @@ export function apply(ctx) {
   ctx.on("tools/post-execute", async (exec, result, next) => {
     const decision = await next();
     try {
+      const current = await loadState();
+      if (!current.config.enabled) return decision;
       const agent = exec.agent;
       const cwd = agentCwd(agent);
       const index = await hookIndexFor(cwd, agent);
@@ -427,6 +439,7 @@ export function apply(ctx) {
         if (sessionActiveOf(agent, name) || activationStateOf(sessionEvents(agent?.session), agent?.session?.surface?.nodes, name).active) continue;
         const skill = await ctx.skills.get(name, { cwd, scope: agent, signal: exec.signal });
         if (skill === undefined || !isModelInvocable(skill)) continue;
+        if (resolveActivationMode(skill.metadata, skillRecord(current, name, skill.source, cwd)?.mode) === "off") continue;
         markSessionActive(agent, name);
         emitHook("PostToolUse", name, "activate", exec.name);
         contexts.push(createUserMessage({
@@ -483,9 +496,7 @@ export function apply(ctx) {
       });
     }
     const skills = enriched.map((skill) => {
-      const record = recordMatches(current.skills[skill.name], skill.source, cwd)
-        ? current.skills[skill.name]
-        : undefined;
+      const record = skillRecord(current, skill.name, skill.source, cwd);
       return {
         name: skill.name,
         description: skill.description,
@@ -696,8 +707,23 @@ export function apply(ctx) {
     }));
     const skills = { ...state.skills };
     delete skills[name];
-    applyState({ skillSources, skills });
+    const overrides = { ...state.overrides };
+    delete overrides[overrideKey(name, "user")];
+    applyState({ skillSources, skills, overrides });
     return name;
+  }
+
+  function overrideForEdit(name, args) {
+    if (!isSkillName(name)) throw new Error("invalid skill name");
+    const scope = args.scope === "project" ? "project" : "user";
+    if (scope === "project" && (typeof args.cwd !== "string" || !args.cwd)) {
+      throw new Error('project-scoped overrides require a "cwd" argument');
+    }
+    const record = skillRecord(state, name, scope === "project" ? "project-dsh" : "user-dsh", args.cwd);
+    return {
+      scope, cwd: scope === "project" ? args.cwd : undefined,
+      mode: record?.mode, triggers: record?.triggers, hooks: record?.hooks,
+    };
   }
 
   async function runAction(args, signal, scope) {
@@ -753,10 +779,9 @@ export function apply(ctx) {
         const skillName = String(args.name);
         const mode = String(args.mode);
         if (!ACTIVATION_MODES.includes(mode)) throw new Error(`mode must be one of ${ACTIVATION_MODES.join("/")}`);
-        const entry = state.skills[skillName] ?? newSkillRecord();
-        applyRecordScope(entry, args);
+        const entry = overrideForEdit(skillName, args);
         entry.mode = mode;
-        applyState({ skills: { ...state.skills, [skillName]: entry } });
+        applyState({ overrides: { ...state.overrides, [overrideKey(skillName, entry.scope, entry.cwd)]: entry } });
         pushEvent(state, "set-mode", `${skillName} → ${mode}`);
         await saveState();
         return { ok: true, message: `${skillName} → ${mode}` };
@@ -770,20 +795,18 @@ export function apply(ctx) {
           .map((item) => item.trim())
           .filter((item) => item.length > 0 && item.length <= 200)
           .slice(0, 32);
-        const entry = state.skills[skillName] ?? newSkillRecord();
-        applyRecordScope(entry, args);
+        const entry = overrideForEdit(skillName, args);
         entry.triggers = triggers;
-        applyState({ skills: { ...state.skills, [skillName]: entry } });
+        applyState({ overrides: { ...state.overrides, [overrideKey(skillName, entry.scope, entry.cwd)]: entry } });
         pushEvent(state, "set-triggers", `${skillName}: ${triggers.join(", ") || "(none)"}`);
         await saveState();
         return { ok: true, message: `${skillName} triggers: ${triggers.join(", ") || "(none)"}` };
       }
       case "set-hooks": {
         const skillName = String(args.name);
-        const entry = state.skills[skillName] ?? newSkillRecord();
-        applyRecordScope(entry, args);
+        const entry = overrideForEdit(skillName, args);
         entry.hooks = sanitizeHooks(args.hooks);
-        applyState({ skills: { ...state.skills, [skillName]: entry } });
+        applyState({ overrides: { ...state.overrides, [overrideKey(skillName, entry.scope, entry.cwd)]: entry } });
         pushEvent(state, "set-hooks", `${skillName}: ${JSON.stringify(entry.hooks).slice(0, 300)}`);
         await saveState();
         hookIndex.clear();
@@ -867,6 +890,7 @@ export function apply(ctx) {
           const skill = await ctx.skills.get(name, lookup);
           signal.throwIfAborted();
           if (skill === undefined || !isModelInvocable(skill)) continue;
+          if (resolveActivationMode(skill.metadata, skillRecord(current, name, skill.source, lookup.cwd)?.mode) === "off") continue;
           markSessionActive(agent, name);
           emitHook("SessionStart", name, "activate");
           injections.push(createUserMessage({
@@ -1070,38 +1094,6 @@ export function apply(ctx) {
 
   // Kick the state file into existence at boot so the UI never races it.
   void loadState().then(() => saveState()).catch(() => {});
-}
-
-/** Fresh state record for a skill the user configured but did not install. */
-function newSkillRecord() {
-  return {
-    sourceId: "",
-    sourceUrl: "",
-    ref: "",
-    commit: "",
-    relPath: "",
-    installedAt: "",
-    scope: undefined,
-    cwd: undefined,
-  };
-}
-
-/**
- * Apply the scope/cwd of a mutation to a record: project-scoped records carry
- * their workspace cwd and never apply to user-root skills of the same name.
- */
-function applyRecordScope(entry, args) {
-  const scope = args.scope === "project" ? "project" : "user";
-  if (scope === "project") {
-    if (typeof args.cwd !== "string" || args.cwd === "") {
-      throw new Error('project-scoped overrides require a "cwd" argument');
-    }
-    entry.scope = "project";
-    entry.cwd = args.cwd;
-  } else {
-    entry.scope = undefined;
-    entry.cwd = undefined;
-  }
 }
 
 /** DSH 0.1.3 exposes immutable snapshots; older hosts expose events directly. */
