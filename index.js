@@ -527,7 +527,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.7",
+        version: "1.0.8",
         hasGit: git,
         home,
         skillsRoot,
