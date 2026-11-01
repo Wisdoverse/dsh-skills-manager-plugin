@@ -93,7 +93,7 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 
 ### Requirements
 
-- DeepSeek Harness `0.1.1-rc.2`, `0.1.2-alpha.3`, `0.1.3-alpha.1`, `0.2.0-rc.2`, `0.2.1-rc.2`, or `0.2.1-rc.3`.
+- DeepSeek Harness `0.1.1-rc.2`, `0.1.2-alpha.3`, `0.1.3-alpha.1`, `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.3`, or `0.2.1-rc.5`.
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm available on `PATH` for `dsh plugin`.
 
@@ -139,6 +139,7 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 | --- | --- |
 | DeepSeek Harness | `0.1.1-rc.2` dependency contract; `0.1.2-alpha.3` dependency contract plus isolated install and UI smoke tests; `0.1.3-alpha.1` tagged-source API review and session-hook regression tests; `0.2.0-rc.2` isolated install, Web boot, Settings API, and live `/name` skill invocation |
 | DeepSeek Harness `0.2.1` | `0.2.1-rc.2` and `0.2.1-rc.3`: isolated installation, composed configuration, Web startup, Settings API and UI, and 14 host regression tests per version |
+| DeepSeek Harness `0.2.1-rc.5` | Linux and Node.js `24.22.2`: 51 tests, compatibility admission, isolated configuration, Web startup, Settings API and UI, and browser bundle delivery |
 | Node.js | `22.19.0` and `24.19.0` |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |
@@ -149,9 +150,11 @@ For DSH `0.2.0-rc.2`, use plugin `1.0.6` or later. Older versions emit `source.k
 
 For DSH `0.2.1-rc.2` or `0.2.1-rc.3`, use plugin `1.0.7` or later. Skill activation, project overrides, tool status, and hook payloads follow the current session directory. Each scope's hook cache refreshes when that directory changes. Older hosts continue to use `session.header.cwd`.
 
+For DSH `0.2.1-rc.5`, use plugin `1.0.8` or later. Version `1.0.7` omits this runtime from its compatibility declaration, so DSH denies activation.
+
 The `engines.dsh` declaration and host peer dependencies specify the same supported versions. Other `0.2.x` versions remain outside that range.
 
-The `0.2.1` smoke tests use Windows and Node.js `24.19.0`. A real headless model turn completes with automatic skill activation on each version. Office features remain untested.
+The `0.2.1-rc.2` and `0.2.1-rc.3` smoke tests use Windows and Node.js `24.19.0`. A real headless model turn completes with automatic skill activation on each version. The `0.2.1-rc.5` checks use Linux and Node.js `24.22.2`. Its production Settings UI also passes a browser check. No model turn runs on `0.2.1-rc.5`. Office features remain untested.
 
 DSH is in developer preview. Pin the plugin to a commit when reproducibility matters, and re-run the install smoke test when upgrading DSH dependencies.
 
