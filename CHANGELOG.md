@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.9 - 2026-11-18
+
+### Fixed
+
+- Accept DSH `0.2.2-rc.1` and `0.2.2-rc.3` in `engines.dsh` and host peer dependencies.
+- Retain the existing runtime behavior and reject untested DSH versions.
+
 ## 1.0.8 - 2026-11-01
 
 ### Fixed
