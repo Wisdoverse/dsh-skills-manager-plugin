@@ -93,7 +93,7 @@ flowchart LR
 
 ### 环境要求
 
-- DeepSeek Harness `0.1.1-rc.2`、`0.1.2-alpha.3`、`0.1.3-alpha.1`、`0.2.0-rc.2`、`0.2.1-rc.2`、`0.2.1-rc.3`、`0.2.1-rc.5`、`0.2.2-rc.1` 或 `0.2.2-rc.3`。
+- DeepSeek Harness `0.1.1-rc.2`、`0.1.2-alpha.3`、`0.1.3-alpha.1`、`0.2.0-rc.2`、`0.2.1-rc.2`、`0.2.1-rc.3`、`0.2.1-rc.5`、`0.2.2-rc.1`、`0.2.2-rc.3`、`0.2.2-rc.5` 或 `0.2.3-alpha.2`。
 - Node.js `^22.19.0 || >=24.0.0`；
 - `PATH` 中存在 pnpm，供 `dsh plugin` 调用。
 
@@ -141,7 +141,8 @@ dsh plugin --profile web add .
 | DeepSeek Harness `0.2.1` | `0.2.1-rc.2` 与 `0.2.1-rc.3`：隔离安装、配置合成、Web 启动、Settings API 与 UI，以及每个版本的 14 项宿主回归测试 |
 | DeepSeek Harness `0.2.1-rc.5` | Linux 与 Node.js `24.22.2`：51 项测试、兼容性检查、隔离配置合成、Web 启动、Settings API 与 UI，以及浏览器资源交付 |
 | DeepSeek Harness `0.2.2` | `0.2.2-rc.1` 与 `0.2.2-rc.3`：Windows、Node.js `24.22.1`、安装、Web 启动、Settings API/UI、真实模型自动激活，以及每个版本的 14 项宿主测试 |
-| Node.js | CI 使用 `22.19.0` 与 `24.19.0`；DSH `0.2.2` 检查使用 `24.22.1` |
+| DeepSeek Harness `0.2.2-rc.5` 与 `0.2.3-alpha.2` | 两个版本均通过 Windows 下的打包安装、Web 页面和 API 的项目设置检查，以及真实模型对话中的技能激活检查。每个版本通过 14 项宿主测试。 |
+| Node.js | CI 使用 `22.19.0` 与 `24.19.0`。宿主检查使用 `24.22.1` 验证 DSH `0.2.2`，使用 `24.22.3` 验证 `0.2.3-alpha.2`。 |
 | pnpm | `11.19.0`，使用 frozen lockfile |
 | 操作系统 | Ubuntu 与 Windows CI 矩阵 |
 
@@ -155,6 +156,9 @@ dsh plugin --profile web add .
 
 使用 DSH `0.2.2-rc.1` 或 `0.2.2-rc.3` 时，请安装本插件 `1.0.9` 或更新版本，并使用 Node.js `>=24.9.0`。
 旧版插件的兼容声明缺少这两个宿主版本，因此 DSH 拒绝激活插件。
+
+使用 DSH `0.2.2-rc.5` 或 `0.2.3-alpha.2` 时，请安装本插件 `1.0.10` 或更新版本。
+DSH `0.2.2-rc.5` 要求 Node.js `>=24.9.0`。DSH `0.2.3-alpha.2` 要求 Node.js `^24.22.3 || >=26.13.1`。
 
 `engines.dsh` 声明与宿主 peer 依赖指定相同的支持范围。其他 `0.2.x` 版本仍不在该范围内。
 

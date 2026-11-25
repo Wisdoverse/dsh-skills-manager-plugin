@@ -297,10 +297,14 @@ for (const [enabled, mode] of [[true, "off"], [false, "auto"]]) {
   });
 }
 
-test("a fresh DSH home returns a valid Settings view", async () => {
+test("Settings reads project skills with a retained preset scope", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-skills-manager-"));
   const previousHome = process.env.DSH_HOME;
   process.env.DSH_HOME = home;
+  const cwd = join(home, "project");
+  const presetKey = {};
+  let openScopes = 0;
+  let failSnapshot = false;
   let route;
 
   try {
@@ -310,14 +314,30 @@ test("a fresh DSH home returns a valid Settings view", async () => {
       events: { async parallel() {} },
       logger: { warn() {} },
       skills: {
-        snapshot: async () => ({ complete: true, skills: [] }),
+        async snapshot(options) {
+          if (options.cwd !== undefined) {
+            assert.equal(options.cwd, cwd);
+            assert.equal(options.scope, presetKey);
+            assert.equal(openScopes, 1);
+            if (failSnapshot) throw new Error("Catalog read failed");
+          }
+          return { complete: true, skills: [] };
+        },
         get: async () => undefined,
       },
       tools: { register() {} },
       inject(seats, setup) {
         assert.deepEqual(seats, ["connection", "agentPresets"]);
         setup({
-          agentPresets: { standingKeyFor: async () => undefined },
+          agentPresets: {
+            async acquireScope() {
+              openScopes += 1;
+              return {
+                key: presetKey,
+                async [Symbol.asyncDispose]() { openScopes -= 1; },
+              };
+            },
+          },
           connection: {
             fetch: {
               register(value) {
@@ -334,15 +354,28 @@ test("a fresh DSH home returns a valid Settings view", async () => {
     assert.equal(route.path, "/api/skill-manager");
     assert.deepEqual(route.methods, ["POST"]);
     assert.equal((await route.fetch(new Request("http://localhost/api/skill-manager", { method: "POST" }))).status, 415);
-    const response = await route.fetch(new Request("http://localhost/api/skill-manager", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ endpoint: "list", payload: {} }),
-    }));
-    const result = await response.json();
+    async function request(endpoint, payload) {
+      const response = await route.fetch(new Request("http://localhost/api/skill-manager", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint, payload }),
+      }));
+      return response.json();
+    }
+    const result = await request("list", {});
     assert.equal(result.ok, true);
     assert.equal(Array.isArray(result.value.events), true);
     assert.equal(result.value.events[0]?.kind, "state");
+    assert.equal(openScopes, 0);
+
+    const project = await request("list", { cwd });
+    assert.equal(project.ok, true, project.error?.message);
+    assert.equal(openScopes, 0);
+
+    failSnapshot = true;
+    const refresh = await request("refresh", { cwd });
+    assert.equal(refresh.error?.message, "Catalog read failed");
+    assert.equal(openScopes, 0);
   } finally {
     if (previousHome === undefined) delete process.env.DSH_HOME;
     else process.env.DSH_HOME = previousHome;

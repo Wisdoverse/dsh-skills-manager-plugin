@@ -479,9 +479,7 @@ export function apply(ctx) {
         whenToUse: full?.whenToUse ?? summary.whenToUse,
       });
     }
-    // Web Settings has no agent preset, so its host catalog intentionally has
-    // no filesystem provider. Merge the manager-owned user root for display;
-    // preset/project catalog entries keep precedence by name.
+    // Keep user skills visible when the host catalog omits them.
     const seen = new Set(enriched.map((skill) => skill.name));
     for (const candidate of await findSkillDirs(skillsRoot, 1)) {
       if (!candidate.name || !candidate.description || !isSkillName(candidate.name) || seen.has(candidate.name)) continue;
@@ -527,7 +525,7 @@ export function apply(ctx) {
       skillSources: current.skillSources,
       events: current.events.slice(-12).reverse(),
       meta: {
-        version: "1.0.9",
+        version: "1.0.10",
         hasGit: git,
         home,
         skillsRoot,
@@ -1036,9 +1034,17 @@ export function apply(ctx) {
   ctx.inject(["connection", "agentPresets"], (connectionCtx) => {
     async function settingsView(payload) {
       const cwd = typeof payload?.cwd === "string" ? payload.cwd : undefined;
-      // ponytail: Settings has no session context; expose the default preset until the UI offers preset selection.
-      const scope = cwd === undefined ? undefined : await connectionCtx.agentPresets.standingKeyFor();
-      return managerView(cwd, scope);
+      if (cwd === undefined) return managerView();
+      const presets = connectionCtx.agentPresets;
+      if (typeof presets.acquireScope !== "function") {
+        return managerView(cwd, await presets.standingKeyFor?.());
+      }
+      const preset = await presets.acquireScope();
+      try {
+        return await managerView(cwd, preset.key);
+      } finally {
+        await preset[Symbol.asyncDispose]();
+      }
     }
     async function handleSettings(endpoint, payload, signal) {
       try {
