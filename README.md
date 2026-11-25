@@ -93,7 +93,7 @@ By default, a turn can auto-load up to two skills and suggest up to three. Activ
 
 ### Requirements
 
-- DeepSeek Harness `0.1.1-rc.2`, `0.1.2-alpha.3`, `0.1.3-alpha.1`, `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.3`, `0.2.1-rc.5`, `0.2.2-rc.1`, or `0.2.2-rc.3`.
+- DeepSeek Harness `0.1.1-rc.2`, `0.1.2-alpha.3`, `0.1.3-alpha.1`, `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.3`, `0.2.1-rc.5`, `0.2.2-rc.1`, `0.2.2-rc.3`, `0.2.2-rc.5`, or `0.2.3-alpha.2`.
 - Node.js `^22.19.0 || >=24.0.0`;
 - pnpm available on `PATH` for `dsh plugin`.
 
@@ -141,7 +141,8 @@ The included `cordis.patch.yml` inserts `skill-manager` into the host compositio
 | DeepSeek Harness `0.2.1` | `0.2.1-rc.2` and `0.2.1-rc.3`: isolated installation, composed configuration, Web startup, Settings API and UI, and 14 host regression tests per version |
 | DeepSeek Harness `0.2.1-rc.5` | Linux and Node.js `24.22.2`: 51 tests, compatibility admission, isolated configuration, Web startup, Settings API and UI, and browser bundle delivery |
 | DeepSeek Harness `0.2.2` | `0.2.2-rc.1` and `0.2.2-rc.3`: Windows, Node.js `24.22.1`, installation, Web startup, Settings API/UI, real model activation, and 14 host tests per version |
-| Node.js | `22.19.0` and `24.19.0` in CI; `24.22.1` for DSH `0.2.2` checks |
+| DeepSeek Harness `0.2.2-rc.5` and `0.2.3-alpha.2` | On Windows, both versions pass package installation, project settings checks in the Web UI and API, and skill activation in real model turns. Each version passes 14 host tests. |
+| Node.js | `22.19.0` and `24.19.0` in CI. Host checks use `24.22.1` for DSH `0.2.2` and `24.22.3` for `0.2.3-alpha.2`. |
 | pnpm | `11.19.0` with a frozen lockfile |
 | Operating systems | Ubuntu and Windows CI matrix |
 
@@ -155,6 +156,9 @@ For DSH `0.2.1-rc.5`, use plugin `1.0.8` or later. Version `1.0.7` omits this ru
 
 For DSH `0.2.2-rc.1` or `0.2.2-rc.3`, use plugin `1.0.9` or later and Node.js `>=24.9.0`.
 Older plugin versions omit these hosts from their compatibility declarations, so DSH denies activation.
+
+For DSH `0.2.2-rc.5` or `0.2.3-alpha.2`, install plugin `1.0.10` or later.
+DSH `0.2.2-rc.5` requires Node.js `>=24.9.0`. DSH `0.2.3-alpha.2` requires Node.js `^24.22.3 || >=26.13.1`.
 
 The `engines.dsh` declaration and host peer dependencies specify the same supported versions. Other `0.2.x` versions remain outside that range.
 

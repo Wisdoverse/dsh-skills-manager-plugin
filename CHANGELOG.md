@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.10 - 2026-11-26
+
+### Fixed
+
+- Admit DSH `0.2.2-rc.5` and `0.2.3-alpha.2` in `engines.dsh` and the host peer dependencies.
+- Use the default agent preset to load project skills in Settings.
+
 ## 1.0.9 - 2026-11-18
 
 ### Fixed
